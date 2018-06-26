@@ -6,6 +6,14 @@ namespace DotnetWebApi.Data
     public class NameContext : DbContext
     {
         /// <summary>
+        /// Constructor without params
+        /// </summary>
+        public NameContext()
+            : base() 
+        {
+
+        }
+        /// <summary>
         /// Constructor with options
         /// </summary>
         /// <param name="options"></param>

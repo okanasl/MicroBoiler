@@ -1,9 +1,9 @@
 version: 0.1
-
+name: ExampleApp
 servers: 
    - nginx_instance_v1:
       type: nginx
-      name : my_proxy_server
+      name : my_nginx_server
       ports: [80,443] # Expose HTTP and HTTPS ports
 
 databases:
@@ -37,9 +37,9 @@ eventbus:
         volumes:
           - rabbit-volume:/var/lib/rabbitmq
         ports:
-          - "15672:15672"
-          - "5672:5672"
-          - "5671:5671"
+          - 15672
+          - 5672
+          - 5671
         environment:
           RABBITMQ_DEFAULT_PASS: machine
           RABBITMQ_DEFAULT_USER: doom
@@ -53,14 +53,15 @@ identity_services:
       type: identityserver4
       name: my_identity_name
       eventbus: 
-        bus: rabbitmq_instance_v1
+        bus: rabbit_name
         with: masstransit
       ports: [5000]
+      server: my_nginx_server
       docker_options:
         build: in_container # OR in_dev_machine(copy publish directory)
-      logger: "serilog"
+      logging: serilog
       database: 
-        provider: postgresql_instance_v1
+        provider: postgre_name
         database_name: my_identity_db
         create_database: true
         seed_admin_account: true
@@ -75,13 +76,13 @@ api_services:
       type: dotnet_web_api
       name: my_foo_api
       docker_options:
-        build: in_container # OR in_dev_machine(copy publish directory)
+        build: build_container # OR build_dev (copy publish directory)
       eventbus: 
-        bus_instance: rabbitmq_instance_v1
+        bus_instance: rabbit_name
         implement_with: masstransit
       authorization:
-        issuer: identityserver_v1
-        api_secret: identityserver_v1_secret
+        issuer: my_identity_name
+        api_secret: my_identity_name_secret
         avaliable_scopes:
          - openid
          - profile
@@ -90,19 +91,20 @@ api_services:
          - foo_api_write
          - foo_api_fullaccess
       database: 
-        provider: postgresql_instance_v1
-        database_name: my_identity_db
+        provider: postgre_name
+        database_name: foo_api_db
         create_database: true
       cache:
         type: memory
       ports: [7000]
-      logger: "serilog"
+      server: my_nginx_server
+      logging: serilog
    - bar_api:
       type: dotnet_web_api
       name: MyBarApi
       authorization:
-        issuer: identityserver_v1
-        secret: identityserver_v1_secret
+        issuer: my_identity_name
+        secret: my_identity_name_bar_secret
         avaliable_scopes:
          - openid
          - profile
@@ -111,19 +113,20 @@ api_services:
          - foo_api_write
          - foo_api_fullaccess
       database: 
-        provider: postgresql_instance_v1
+        provider: postgre_name
         database_name: bar_api_db
         context_name: BarApiContext
         create_database: true
       cache:
         type: redis
         redis_options: 
-          redis_server: redis_instance_v1
+          redis_server: my_redis
           redis_instance_name: master
       eventbus: 
-        bus_instance: rabbitmq_instance_v1
+        bus_instance: rabbit_name
       ports: [7000]
-      logger: "serilog"
+      server: my_nginx_server
+      logging: serilog
 clients: 
    - web_1:
       type: angular
@@ -138,5 +141,6 @@ clients:
          - foo_api_fullaccess
          - bar_api_readonly
       ports: [4200]
+      server: my_nginx_server
 
       

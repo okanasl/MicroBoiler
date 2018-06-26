@@ -1,14 +1,14 @@
 ﻿
 
 
-#region if(authorization)
-    #region if(identityserver4)
+//& region if(authorization)
+    //& region if(identityserver4)
 using IdentityServer4.AccessTokenValidation;
-    #endregion
-    #region if(keycloack)
+    //& endregion
+    //& region if(keycloack)
     // TODO: Implement keycloack
-    #endregion
-#endregion
+    //& endregion
+//& endregion
 
 using System;
 using System.Collections.Generic;
@@ -25,11 +25,14 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using DotnetWebApi.Services;
-#region if (eventbus)
-using MassTransit;
 using DotnetWebApi.Data;
 using Microsoft.EntityFrameworkCore;
-#endregion
+//& region if (server)
+using Microsoft.AspNetCore.HttpOverrides;
+//& endregion
+//& region if (eventbus)
+using MassTransit;
+//& endregion
 
 namespace DotnetWebApi
 {
@@ -46,39 +49,39 @@ namespace DotnetWebApi
         public void ConfigureServices(IServiceCollection services)
         {
             
-#region if (database)
+//& region if (database)
     string connectionString = "{{database:connectionString}}";
-    #region if (mssql)
+    //& region if (mssql)
             services.AddDbContext<NameContext>(options =>
                 options.UseSqlServer(connectionString)
                 );
-    #endregion
-    #region if (mysql)
+    //& endregion
+    //& region if (mysql)
             services.AddDbContext<NameContext>(options =>
                 options.UseMySql(connectionString)
                 );
-    #endregion
-    #region if (postgresql)
+    //& endregion
+    //& region if (postgresql)
             services.AddDbContext<NameContext>(options =>
                 options.UseNpgsql(connectionString)
                 );
-    #endregion
-#endregion
-#region if (cache)
-    #region if (redis)
+    //& endregion
+//& endregion
+//& region if (cache)
+    //& region if (redis)
             services.AddDistributedRedisCache(option =>
             {
                 option.Configuration = "{{redis_options:connection}}";
                 option.InstanceName = "{{redis_options:instance_name}}";
             });
-    #endregion
-    #region if(memory)
+    //& endregion
+    //& region if(memory)
             services.AddMemoryCache(options => {
                 // Your options
             });            
-    #endregion
-#endregion
-#region if (authorization)
+    //& endregion
+//& endregion
+//& region if (authorization)
             // Use In your controller like
             // [Authorize(Policy = "Your_Authorization")]
             services.AddAuthorization(options =>
@@ -89,7 +92,7 @@ namespace DotnetWebApi
                     // policyUser.RequireRole("fso.api.user");
                 });
             });
-    #region if (identityserver4)
+    //& region if (identityserver4)
             services.AddAuthentication(IdentityServerAuthenticationDefaults.AuthenticationScheme)
                .AddIdentityServerAuthentication(options =>
                {
@@ -99,10 +102,10 @@ namespace DotnetWebApi
                    options.RequireHttpsMetadata = false;
                    options.SupportedTokens = SupportedTokens.Both;
                });
-    #endregion
-#endregion
-#region if (eventbus)
-    #region if (rabbitmq)
+    //& endregion
+//& endregion
+//& region if (eventbus)
+    //& region if (rabbitmq)
             services.AddSingleton(provider => Bus.Factory.CreateUsingRabbitMq(cfg =>
             {
                 var host = cfg.Host("localhost", "/", h => {
@@ -123,8 +126,8 @@ namespace DotnetWebApi
             services.AddSingleton<IBus>(provider => provider.GetRequiredService<IBusControl>());
             // Register with IHostedService To Start bus in Application Start and Stop when App Stops
             services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService, BusService>();        
-    #endregion
-#endregion
+    //& endregion
+//& endregion
             // You may want to change allowed origins for security.
             services.AddCors(options =>
             {
@@ -147,8 +150,18 @@ namespace DotnetWebApi
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(
+            IApplicationBuilder app,
+            IHostingEnvironment env
+//& region if (logging)
+            ,ILoggerFactory loggerFactory
+//& endregion
+        )
         {
+//& region if (logging)
+            loggerFactory.AddConsole(Configuration.GetSection("Logging"));
+            loggerFactory.AddDebug();            
+//& endregion
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -157,9 +170,15 @@ namespace DotnetWebApi
             {
                 app.UseHsts();
             }
-#region if (authorization)
+//& region if (authorization)
             app.UseAuthentication();
-#endregion
+//& endregion
+//& region if (server)
+            app.UseForwardedHeaders(new ForwardedHeadersOptions
+            {
+                ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+            });
+//& endregion
             app.UseCors("CorsPolicy");
             // app.UseHttpsRedirection();
             app.UseMvc();

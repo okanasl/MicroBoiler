@@ -7,6 +7,9 @@ using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Serilog;
+using Serilog.Events;
+using Serilog.Sinks.SystemConsole.Themes;
 
 namespace DotnetWebApi
 {
@@ -14,11 +17,34 @@ namespace DotnetWebApi
     {
         public static void Main(string[] args)
         {
+//& region if (logging)
+    //& region if (logging:serilog)
+            Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Debug()
+                .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+                .MinimumLevel.Override("System", LogEventLevel.Warning)
+                .Enrich.FromLogContext()
+                .WriteTo.File(@"logs.txt")
+                .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level}] {SourceContext}{NewLine}{Message:lj}{NewLine}{Exception}{NewLine}", theme: AnsiConsoleTheme.Literate)
+                .CreateLogger();
+            
             CreateWebHostBuilder(args).Build().Run();
         }
-
+    //& endregion
+//& endregion
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
+//& region if (logging)
+    //& region if (logging:serilog)
+                .ConfigureLogging(builder =>
+                    {
+                        builder.ClearProviders();
+                        builder.AddSerilog();
+                    })
+    //& endregion
+//& endregion
+                .UseUrls("http://*:{{port}}")
                 .UseStartup<Startup>();
+                
     }
 }

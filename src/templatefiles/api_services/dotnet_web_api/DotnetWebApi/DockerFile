@@ -31,4 +31,10 @@ ENTRYPOINT ["dotnet", "{{proj_name}}.dll"]
 #endregion
 #region if (build_container)
 
+FROM microsoft/dotnet:2.1-runtime
+COPY ./publish /app
+WORKDIR /app
+ENV ASPNETCORE_URLS http://+:{{port}}
+ENTRYPOINT ["dotnet", "{{proj_name}}.dll"]
+
 #endregion
