@@ -50,7 +50,7 @@ namespace DotnetWebApi
         {
             
 //& region if (database)
-    string connectionString = "{{database:connectionString}}";
+            string connectionString = "{{database:connectionString}}";
     //& region if (mssql)
             services.AddDbContext<NameContext>(options =>
                 options.UseSqlServer(connectionString)
@@ -116,7 +116,8 @@ namespace DotnetWebApi
                 cfg.ReceiveEndpoint(host, e =>
                 {
                     e.PrefetchCount = 8;
-                    // Add Event Consumers Here
+                    // Add Event Consumers Here Like:
+                    // e.Consumer<AnEventHappenedConsumer>();
                     // If you want Inject Services in Consumer add provider parameter like below.
                     // e.Consumer<AnEventHappenedConsumer>(provider);
                 });
@@ -124,7 +125,8 @@ namespace DotnetWebApi
             services.AddSingleton<IPublishEndpoint>(provider => provider.GetRequiredService<IBusControl>());
             services.AddSingleton<ISendEndpointProvider>(provider => provider.GetRequiredService<IBusControl>());
             services.AddSingleton<IBus>(provider => provider.GetRequiredService<IBusControl>());
-            // Register with IHostedService To Start bus in Application Start and Stop when App Stops
+            // Register with IHostedService To Start bus when Application Starts and Stop when Application Stops
+            // Then you can Inject IBus to publish your messages
             services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService, BusService>();        
     //& endregion
 //& endregion
@@ -180,7 +182,7 @@ namespace DotnetWebApi
             });
 //& endregion
             app.UseCors("CorsPolicy");
-            // app.UseHttpsRedirection();
+            // app.UseHttpsRedirection(); After you configure with nginx
             app.UseMvc();
         }
     }

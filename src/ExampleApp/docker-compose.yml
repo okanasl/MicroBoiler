@@ -1,0 +1,14 @@
+{networks: [{localnet: {driver: bridge}}], services: [{myNginxServer: {build: {context: myNginxServer/,
+          dockerfile: Dockerfile}, container_name: myNginxServer, depends_on: [myFooApi,
+          MyBarApi, myAngularClient, myIdentityService], image: nginxhttp, links: [
+          myFooApi, MyBarApi, myAngularClient, myIdentityService], networks: [localnet],
+        ports: ['80:80', '443:443']}}, {postgre_name: {container_name: my_postgre_container,
+        environment: {POSTGRES_DB: dev, POSTGRES_PASSWORD: machine, POSTGRES_USER: doom},
+        image: postgres, volumes: ['./postgres-data:/var/lib/postgresql/data']}},
+    {my_mysql_server: {command: mysqld --user=root --verbose, container_name: mysqlc,
+        environment: {MYSQL_ALLOW_EMPTY_PASSWORD: 'false', MYSQL_PASSWORD: machine,
+          MYSQL_ROOT_HOST: '%', MYSQL_ROOT_PASSWORD: machine, MYSQL_USER: doom}, image: 'mysql/mysql-server:5.7',
+        networks: [localnet], volumes: ['mysqlvol:/var/lib/mysql']}}, {my_redis: {
+        build: {context: my_redis/, dockerfile: Dockerfile}, container_name: my_redis,
+        depends_on: [], image: my_redis, links: [MyBarApi], networks: [localnet],
+        ports: ['6379:6379']}}], version: 3}

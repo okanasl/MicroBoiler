@@ -3,15 +3,28 @@ name: ExampleApp
 servers: 
    - nginx_instance_v1:
       type: nginx
-      name : my_nginx_server
-      ports: [80,443] # Expose HTTP and HTTPS ports
+      name : myNginxServer
+      ports: [80,443] # Default HTTP and HTTPS ports
+      config: # example (default) config
+        worker-process: '1'
+        events:
+          worker-connections: '1024'
+        http:
+          gzip: 'on'
+          gzip_http_version: '1.0'
+          gzip_comp_level: '2'
+          gzip_min_length: '1100'
+          gzip_buffers : '4 8k'
+          gzip_proxied: 'expired no-cache no-store private auth'
+          gzip_disable: '"MSIE [1-6]\."'
+          gzip_vary: 'on'
 
 databases:
    - postgresql_instance_v1:
       type: postgresql
       name: postgre_name
       ports: [6379]
-      dockerc:
+      docker_compose_set: # optional (default values)
         image: postgres
         container_name: my_postgre_container
         volumes:
@@ -20,6 +33,19 @@ databases:
           POSTGRES_PASSWORD: machine
           POSTGRES_USER: doom
           POSTGRES_DB: dev
+   - mysql_instance:
+      type: mysql
+      name: my_mysql_server
+      ports: [3306] # default port
+      docker_compose_set: # optional (default values below)
+        container_name: mysqlc
+        command: mysqld --user=root --verbose
+        environment:
+          MYSQL_USER: "doom"
+          MYSQL_PASSWORD: "machine"
+          MYSQL_ROOT_HOST: "%"
+          MYSQL_ROOT_PASSWORD: "machine"
+          MYSQL_ALLOW_EMPTY_PASSWORD: "false"
    - redis_instance_v1:
       name: my_redis
       type: redis
@@ -31,7 +57,7 @@ eventbus:
    - rabbitmq_instance_v1:
       type: rabbitmq
       name: rabbit_name
-      dockerc:
+      docker_compose_set:
         image: rabbitmq:3-management-alpine
         container_name: rabbitmqc
         volumes:
@@ -51,12 +77,12 @@ eventbus:
 identity_services:
    - identityserver_v1:
       type: identityserver4
-      name: my_identity_name
+      name: myIdentityService
       eventbus: 
         bus: rabbit_name
         with: masstransit
       ports: [5000]
-      server: my_nginx_server
+      server: myNginxServer
       docker_options:
         build: in_container # OR in_dev_machine(copy publish directory)
       logging: serilog
@@ -64,7 +90,7 @@ identity_services:
         provider: postgre_name
         database_name: my_identity_db
         create_database: true
-        seed_admin_account: true
+        create_admin_account: true
         admin_account:
           email: admin@admin.com
           password: DooMachine-1
@@ -74,15 +100,15 @@ identity_services:
 api_services: 
    - foo_api:
       type: dotnet_web_api
-      name: my_foo_api
+      name: myFooApi
       docker_options:
         build: build_container # OR build_dev (copy publish directory)
       eventbus: 
         bus_instance: rabbit_name
         implement_with: masstransit
       authorization:
-        issuer: my_identity_name
-        api_secret: my_identity_name_secret
+        issuer: myIdentityService
+        api_secret: myIdentityService_secret
         avaliable_scopes:
          - openid
          - profile
@@ -97,14 +123,14 @@ api_services:
       cache:
         type: memory
       ports: [7000]
-      server: my_nginx_server
+      server: myNginxServer
       logging: serilog
    - bar_api:
       type: dotnet_web_api
       name: MyBarApi
       authorization:
-        issuer: my_identity_name
-        secret: my_identity_name_bar_secret
+        issuer: myIdentityService
+        secret: myIdentityService_bar_secret
         avaliable_scopes:
          - openid
          - profile
@@ -124,13 +150,13 @@ api_services:
           redis_instance_name: master
       eventbus: 
         bus_instance: rabbit_name
-      ports: [7000]
-      server: my_nginx_server
+      ports: [8000]
+      server: myNginxServer
       logging: serilog
 clients: 
    - web_1:
       type: angular
-      name: my_angular_client
+      name: myAngularClient
       add_npm_packages:
        - name: '@ngrx/store'
          version: '6.0.1'
@@ -138,9 +164,11 @@ clients:
         issuer: identityserver_v1
         flow: implicit
         scopes: 
+         - openid
+         - profile
          - foo_api_fullaccess
          - bar_api_readonly
       ports: [4200]
-      server: my_nginx_server
+      server: myNginxServer
 
       
