@@ -202,6 +202,7 @@ def HandleServers(servers):
 
 
 def HandlePostgreSql(db_options):
+    # TODO: handle docker-compose override
     postgre_docker_options = {    
         db_options['name']:db_options['docker_compose_set']
     }
