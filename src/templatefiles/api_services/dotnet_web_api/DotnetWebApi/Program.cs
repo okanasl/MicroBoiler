@@ -17,8 +17,8 @@ namespace DotnetWebApi
     {
         public static void Main(string[] args)
         {
-//& region if (logging)
-    //& region if (logging:serilog)
+//& region (logging)
+    //& region (logging:serilog)
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Debug()
                 .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
@@ -27,23 +27,21 @@ namespace DotnetWebApi
                 .WriteTo.File(@"logs.txt")
                 .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level}] {SourceContext}{NewLine}{Message:lj}{NewLine}{Exception}{NewLine}", theme: AnsiConsoleTheme.Literate)
                 .CreateLogger();
-            
+    //& endregion (logging:serilog)
+//& endregion (logging)            
             CreateWebHostBuilder(args).Build().Run();
         }
-    //& endregion
-//& endregion
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
-//& region if (logging)
-    //& region if (logging:serilog)
+//& region (logging)
+    //& region (logging:serilog)
                 .ConfigureLogging(builder =>
                     {
                         builder.ClearProviders();
                         builder.AddSerilog();
                     })
-    //& endregion
-//& endregion
-                .UseUrls("http://*:{{port}}")
+    //& endregion (logging:serilog)
+//& endregion (logging)
                 .UseStartup<Startup>();
                 
     }

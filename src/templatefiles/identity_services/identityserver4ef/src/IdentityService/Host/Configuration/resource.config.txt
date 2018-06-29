@@ -1,0 +1,31 @@
+                new ApiResource
+                {
+                    Name = "{{resource:name}}",
+                    DisplayName = "{{resource:displayname}}",
+                    ApiSecrets =
+                    {
+                        new Secret("secret".Sha256())
+                    },
+                    UserClaims =
+                    {
+                        JwtClaimTypes.Subject,
+                        JwtClaimTypes.EmailVerified,
+                        JwtClaimTypes.Email,
+                        JwtClaimTypes.Name,
+                        JwtClaimTypes.FamilyName,
+                        JwtClaimTypes.PhoneNumber,
+                        JwtClaimTypes.PhoneNumberVerified,
+                        JwtClaimTypes.PreferredUserName,
+                        JwtClaimTypes.Profile,
+                        JwtClaimTypes.Picture,
+                        JwtClaimTypes.Locale,
+                        JwtClaimTypes.IdentityProvider,
+                        JwtClaimTypes.BirthDate,
+                        JwtClaimTypes.AuthenticationTime,
+                        JwtClaimTypes.Role,
+                    },
+                    Scopes =
+                    {
+                       {{resource:scopes}}
+                    }
+                },

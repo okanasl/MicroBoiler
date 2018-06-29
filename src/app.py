@@ -1,6 +1,7 @@
 #pylint: disable-msg=W0612
 
 import readline
+import fileinput
 import shlex
 from distutils.dir_util import copy_tree
 import yaml
@@ -9,6 +10,8 @@ import sys
 from string import Template
 import nginx
 # helpers
+def InDbQ(value):
+    return '\"'+value+'\"'
 # end helpers
 
 projectOptions = {}
@@ -203,6 +206,7 @@ def HandlePostgreSql(db_options):
         db_options['name']:db_options['docker_compose_set']
     }
     dockerOptions['services'].append(postgre_docker_options)
+
 def HandleMySql(db_options):
     default_options = {
         db_options['name']:{
@@ -223,6 +227,7 @@ def HandleMySql(db_options):
     if 'docker_compose_set' in db_options:
         default_options[db_options['name']].update(db_options['docker_compose_set'])    
     dockerOptions['services'].append(default_options)
+
 def FindRedisUsingServiceNames(redis_name):
     services = []
     for service in projectOptions['api_services']:
@@ -273,11 +278,12 @@ def HandleRedisDatabase(db_options):
         db_options['name']: redis_docker_options
     }
     dockerOptions['services'].append(redis_docker)
+
 def HandleDatabases(databases):
     print ('Configuring Databases')
     for db in databases:
         db_options = list(db.values())[0]
-        print('Scaffolding'+db_options['name'])
+        print('Scaffolding '+db_options['name'])
         if(db_options['type'] == 'postgresql'):
             HandlePostgreSql(db_options)
         if(db_options['type'] == 'mysql'):
@@ -285,9 +291,152 @@ def HandleDatabases(databases):
         elif db_options['type'] == 'redis':
             HandleRedisDatabase(db_options)
 
+def FindApiServicesUsesRabbitmq(rabbit_name):
+    api_services = []
+    for service in projectOptions['api_services']:
+        for key, value in service.items():            
+            if 'eventbus' in value:
+                if value['eventbus']['bus_instance'] == rabbit_name:
+                    api_services.append(value['name'])
+    return api_services
+
+def FindIdentityServicesUsesRabbitmq(rabbit_name):
+    i_services = []
+    for service in projectOptions['identity_services']:
+        for key, value in service.items():            
+            if 'eventbus' in value:
+                if value['eventbus']['bus_instance'] == rabbit_name:
+                    i_services.append(value['name'])
+    return i_services
+
+def HandleRabbitMq(rabbit_options):
+    rabbit_api_services = FindApiServicesUsesRabbitmq(rabbit_options['name'])
+    rabbit_identity_services = FindIdentityServicesUsesRabbitmq(rabbit_options['name'])
+    rabbitmq_docker_options = {
+        'image': 'rabbitmq:3-management-alpine',
+        'container_name': rabbit_options['name'],
+        'volumes': ['rabbit-volume:/var/lib/rabbitmq'],
+        'ports': ['15672:15672','5672:5672','5671:5671'], # Management Publish And Sub Ports
+        'environment': {
+            'RABBITMQ_DEFAULT_PASS':'machine',
+            'RABBITMQ_DEFAULT_USER' : 'doom',
+        },
+        'networks': ['localnet'],
+        'healthcheck': {
+            'test': ["CMD", "curl", "-f", "http://localhost:15672"],
+            'interval': '30s',
+            'timeout': '10s',
+            'retries': '5'
+        },
+        'links':rabbit_identity_services + rabbit_api_services # may be unnecessary
+    }
+    if 'docker_compose_set' in rabbit_options:
+        rabbitmq_docker_options.update(rabbit_options['docker_compose_set'])
+    docker_opts_to_set = {
+        rabbit_options['name']: rabbitmq_docker_options
+    }
+    dockerOptions['services'].append(docker_opts_to_set)
+
+def HandleEventBus(eventbuses):
+    print ('Configuring Bus Instances..')
+    for evenbus in eventbuses:
+        evenbus_options = list(evenbus.values())[0]
+        print('Scaffolding '+evenbus_options['name'])
+        if(evenbus_options['type'] == 'rabbitmq'):
+            HandleRabbitMq(evenbus_options)
+
+
+
+def FindApiServicesUsesIs4(i_service_name):
+    api_services = []
+    for service in projectOptions['api_services']:
+        for key, value in service.items():            
+            if 'authorization' in value:
+                if value['authorization']['issuer'] == i_service_name:
+                    api_services.append(value)
+    return api_services
+def FindClientsUsesIs4(i_service_name):
+    clients = []
+    print (i_service_name)
+    for client in projectOptions['clients']:
+        for key, value in client.items():            
+            if 'authorization' in value:
+                if value['authorization']['issuer'] == i_service_name:
+                    clients.append(value)
+    return clients
+
+def HandleIs4ClientConfiguration(clients, identity_service, is4_copy_folder):
+    print (clients)
+    clients_txt_template_file = os.path.join(
+        is4_copy_folder,
+        'src',
+        'IdentityService',
+        'Host',
+        'Configuration',
+        'client.config.txt'
+        )
+    clients_cs_template_file = os.path.join(
+        is4_copy_folder,
+        'src',
+        'IdentityService',
+        'Host',
+        'Configuration',
+        'Clients.cs'
+        )
+    with open(clients_txt_template_file) as temp_file:
+        template_string = temp_file.read()
+    client_config_as_cs = ""
+    client_count = len(clients)
+    for index, client in enumerate(clients):
+        client_host = client['name'].lower()+'.localhost'
+        redirect_url_templ_val = InDbQ(client_host) +', \n' \
+        + '\t\t\t\t\t\t'+ InDbQ(client_host+'/silent-renew.html') +', \n' \
+        + '\t\t\t\t\t\t'+ InDbQ(client_host+'/login-callback.html')+'\n' 
+        
+        client_config_as_cs += template_string \
+            .replace('{{client:id}}',client['name']) \
+            .replace('{{client:name}}',client['name']) \
+            .replace('{{client:url}}',client_host) \
+            .replace('{{client:accesstokentype}}','AccessTokenType.Reference') \
+            .replace('{{client:redirecturls}}',redirect_url_templ_val)
+        if (index != len(clients)-1):
+            client_config_as_cs += ', \n'
+
+    with open(clients_cs_template_file,'r') as cs_file:
+        cs_content = cs_file.read()
+    os.remove(clients_cs_template_file)
+    cs_content = cs_content.replace('//& replace (clients)', client_config_as_cs)
+    with open(clients_cs_template_file,'w') as cs_file_new:
+        cs_file_new.write(cs_content)
+
+def HandleIdentityServer4(identity_service):
+    print('Moving Template Files...')
+    is4_template_folder = os.path.join(identityServicesPath,'identityserver4ef')
+    is4_copy_folder = os.path.join(srcDir,'IdentityServices',identity_service['name'])
+    copy_tree(is4_template_folder,is4_copy_folder)
+
+    api_services_using_is4 = FindApiServicesUsesIs4(identity_service['name'])
+    clients_using_is4 = FindClientsUsesIs4(identity_service['name'])
+
+    HandleIs4ClientConfiguration(clients_using_is4,identity_service,is4_copy_folder)
+
+    resources_template_file = os.path.join(
+        is4_copy_folder,
+        'src',
+        'IdentityService',
+        'Host',
+        'Configuration',
+        'client.config.txt'
+        )
+def HandleIdentityServices(identity_services):
+    print ('Scaffolding Identity Services...')
+    for i_service in identity_services:
+        i_service_options = list(i_service.values())[0]
+        if (i_service_options['type']=='identityserver4'):
+            HandleIdentityServer4(i_service_options)
+    
 while True:
     cmd, *args = shlex.split(input('> '))
-
     if cmd=='boile':
         optionsFilePath = args[0]
         with open(optionsFilePath, 'r') as stream:
@@ -300,14 +449,22 @@ while True:
                     break
                 # Create Project Files
                 projectDir, srcDir = CreateProjectDirectory(projectName)
+
                 # Create Servers (Nginx Apache)
-                servers = projectOptions['servers']
-                if(servers is not None):
-                    HandleServers(servers)
-                # Create Databases (Nginx Apache)
-                databases = projectOptions['databases']
-                if(databases is not None):
-                    HandleDatabases(databases)
+                if('servers' in projectOptions):
+                    HandleServers(projectOptions['servers'])
+
+                # Create Databases (Postgre, Mysql, Redis)
+                if('databases' in projectOptions):
+                    HandleDatabases(projectOptions['databases'])
+                    
+                # Configure Eventbus Instances (Rabbitmq)
+                if('eventbus' in projectOptions):
+                    HandleEventBus(projectOptions['eventbus'])
+
+                # Create and configure identity_services(SSO)
+                if('identity_services' in projectOptions):
+                    HandleIdentityServices(projectOptions['identity_services'])
                 docker_compose_path = os.path.join(projectDir,'docker-compose.yml')
                 with open(docker_compose_path, 'w') as yaml_file:
                     yaml.dump(dockerOptions, yaml_file, default_flow_style=False)

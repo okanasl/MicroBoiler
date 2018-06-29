@@ -27,12 +27,13 @@ using Newtonsoft.Json.Serialization;
 using DotnetWebApi.Services;
 using DotnetWebApi.Data;
 using Microsoft.EntityFrameworkCore;
-//& region if (server)
+//& region (server)
 using Microsoft.AspNetCore.HttpOverrides;
-//& endregion
-//& region if (eventbus)
+//& endregion (server)
+//& region (eventbus)
 using MassTransit;
-//& endregion
+using MassTransit.ExtensionsDependencyInjectionIntegration;
+//& endregion (eventbus)
 
 namespace DotnetWebApi
 {
@@ -49,39 +50,39 @@ namespace DotnetWebApi
         public void ConfigureServices(IServiceCollection services)
         {
             
-//& region if (database)
+//& region (database)
             string connectionString = "{{database:connectionString}}";
-    //& region if (mssql)
+    //& region (mssql)
             services.AddDbContext<NameContext>(options =>
                 options.UseSqlServer(connectionString)
                 );
-    //& endregion
-    //& region if (mysql)
+    //& endregion (mssql)
+    //& region (mysql)
             services.AddDbContext<NameContext>(options =>
                 options.UseMySql(connectionString)
                 );
-    //& endregion
-    //& region if (postgresql)
+    //& endregion (mysql)
+    //& region (postgresql)
             services.AddDbContext<NameContext>(options =>
                 options.UseNpgsql(connectionString)
                 );
-    //& endregion
-//& endregion
-//& region if (cache)
-    //& region if (redis)
+    //& endregion (postgresql)
+//& endregion (database)
+//& region (cache)
+    //& region (redis)
             services.AddDistributedRedisCache(option =>
             {
                 option.Configuration = "{{redis_options:connection}}";
                 option.InstanceName = "{{redis_options:instance_name}}";
             });
-    //& endregion
-    //& region if(memory)
+    //& endregion (redis)
+    //& region (memory)
             services.AddMemoryCache(options => {
                 // Your options
             });            
-    //& endregion
-//& endregion
-//& region if (authorization)
+    //& endregion (memory)
+//& endregion (cache)
+//& region (authorization)
             // Use In your controller like
             // [Authorize(Policy = "Your_Authorization")]
             services.AddAuthorization(options =>
@@ -92,7 +93,7 @@ namespace DotnetWebApi
                     // policyUser.RequireRole("fso.api.user");
                 });
             });
-    //& region if (identityserver4)
+    //& region (identityserver4)
             services.AddAuthentication(IdentityServerAuthenticationDefaults.AuthenticationScheme)
                .AddIdentityServerAuthentication(options =>
                {
@@ -102,10 +103,13 @@ namespace DotnetWebApi
                    options.RequireHttpsMetadata = false;
                    options.SupportedTokens = SupportedTokens.Both;
                });
-    //& endregion
+    //& endregion identityserver4
 //& endregion
-//& region if (eventbus)
-    //& region if (rabbitmq)
+//& region (eventbus)
+    //& region (eventbus:rabbitmq)
+            services.AddMassTransit(p=>{
+                // p.AddConsumer<AnEventHappenedConsumer>();
+            });
             services.AddSingleton(provider => Bus.Factory.CreateUsingRabbitMq(cfg =>
             {
                 var host = cfg.Host("localhost", "/", h => {
@@ -128,8 +132,8 @@ namespace DotnetWebApi
             // Register with IHostedService To Start bus when Application Starts and Stop when Application Stops
             // Then you can Inject IBus to publish your messages
             services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService, BusService>();        
-    //& endregion
-//& endregion
+    //& endregion (eventbus:rabbitmq)
+//& endregion (eventbus)
             // You may want to change allowed origins for security.
             services.AddCors(options =>
             {
@@ -155,15 +159,15 @@ namespace DotnetWebApi
         public void Configure(
             IApplicationBuilder app,
             IHostingEnvironment env
-//& region if (logging)
+//& region (logging)
             ,ILoggerFactory loggerFactory
-//& endregion
+//& endregion (logging)
         )
         {
-//& region if (logging)
+//& region (logging)
             loggerFactory.AddConsole(Configuration.GetSection("Logging"));
             loggerFactory.AddDebug();            
-//& endregion
+//& endregion (logging)
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -172,15 +176,15 @@ namespace DotnetWebApi
             {
                 app.UseHsts();
             }
-//& region if (authorization)
+//& region (authorization)
             app.UseAuthentication();
-//& endregion
-//& region if (server)
+//& endregion (authorization)
+//& region (server)
             app.UseForwardedHeaders(new ForwardedHeadersOptions
             {
                 ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
             });
-//& endregion
+//& endregion (server)
             app.UseCors("CorsPolicy");
             // app.UseHttpsRedirection(); After you configure with nginx
             app.UseMvc();
