@@ -8,24 +8,10 @@
                     },
                     UserClaims =
                     {
-                        JwtClaimTypes.Subject,
-                        JwtClaimTypes.EmailVerified,
-                        JwtClaimTypes.Email,
-                        JwtClaimTypes.Name,
-                        JwtClaimTypes.FamilyName,
-                        JwtClaimTypes.PhoneNumber,
-                        JwtClaimTypes.PhoneNumberVerified,
-                        JwtClaimTypes.PreferredUserName,
-                        JwtClaimTypes.Profile,
-                        JwtClaimTypes.Picture,
-                        JwtClaimTypes.Locale,
-                        JwtClaimTypes.IdentityProvider,
-                        JwtClaimTypes.BirthDate,
-                        JwtClaimTypes.AuthenticationTime,
-                        JwtClaimTypes.Role,
+                        {{resource:userclaims}}
                     },
                     Scopes =
                     {
-                       {{resource:scopes}}
+                        {{resource:scopes}}
                     }
-                },
+                }

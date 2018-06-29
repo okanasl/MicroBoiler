@@ -144,13 +144,7 @@ namespace Host
             services.AddTransient<IEmailSender, AuthMessageSender>();
             services.AddTransient<ISmsSender, AuthMessageSender>();
 
-            services.AddAuthentication()
-                .AddGitHub(options =>
-                {
-                    options.SaveTokens = true;
-                    options.ClientId = "f4f1278c14329b97f177";
-                    options.ClientSecret = "5b28462d70ab82abd169ce2da4c8a3d176a4480b";
-                });
+
             // MASSTRANSIT 
             services.AddMassTransit(p=>{
                 // p.AddConsumer<SomeEventHappenedConsumer>();

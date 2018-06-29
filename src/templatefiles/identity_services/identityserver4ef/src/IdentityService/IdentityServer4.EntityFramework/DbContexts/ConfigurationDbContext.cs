@@ -101,8 +101,7 @@ namespace IdentityServer4.EntityFramework.DbContexts
             modelBuilder.ConfigureClientContext(storeOptions);
             modelBuilder.ConfigureResourcesContext(storeOptions);
 
-            base.OnModelCreating(modelBuilder);
-            
+            base.OnModelCreating(modelBuilder);            
         }
     }
 }

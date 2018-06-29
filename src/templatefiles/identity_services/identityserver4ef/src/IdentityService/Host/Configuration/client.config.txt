@@ -3,7 +3,7 @@
                     ClientId = "{{client:id}}",
                     ClientName = "{{client:name}}",
                     ClientUri = "{{client:url}}",
-                    AllowedGrantTypes = GrantTypes.Implicit,
+                    AllowedGrantTypes = {{client:granttype}},
                     AllowAccessTokensViaBrowser = true,
                     RequireClientSecret = false,
                     AccessTokenType = {{client:accesstokentype}},                    
@@ -11,10 +11,16 @@
                     {
                        {{client:redirecturls}}
                     },
-                    PostLogoutRedirectUris = { {{client:logoutredirecturls}} },
-                    AllowedCorsOrigins = { {{client:corsorigins}} },
+                    PostLogoutRedirectUris =
+                    { 
+                        {{client:logoutredirecturls}}
+                    },
+                    AllowedCorsOrigins =
+                    { 
+                        {{client:corsorigins}}
+                    },
                     AllowedScopes =
                     {
-                        {{client:scopes}}                       
+                        {{client:scopes}}
                     }
                 }

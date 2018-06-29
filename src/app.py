@@ -9,10 +9,126 @@ import os
 import sys
 from string import Template
 import nginx
+# declare script scope
+dotnet_logging_types = ['microsoft','serilog']
+database_types = ['postgresql','mysql','mssql']
+# end
 # helpers
 def InDbQ(value):
     return '\"'+value+'\"'
+
+def filter_lines(file, start_delete_key, stop_delete_key):
+    """
+    Given a file handle, generate all lines except those between the specified
+    text markers.
+    """
+    lines = iter(file)
+    try:
+        while True:
+            line = next(lines)
+            if start_delete_key in line:
+                # Discard all lines up to and including the stop marker
+                while stop_delete_key not in line:
+                    line = next(lines)
+                line = next(lines)
+            yield line
+    except StopIteration:
+        return
+def filter_sub_lines(
+    file,
+    start_delete_key_consist,
+    start_delete_key_not_consist,
+    stop_delete_key_consist,
+    stop_delete_key_not_consist):
+    """
+    Given a file handle, generate all lines except those between the specified
+    text markers.
+    """
+    lines = iter(file)
+    try:
+        while True:
+            line = next(lines)
+            if start_delete_key_consist in line and start_delete_key_not_consist not in line:
+                # Discard all lines up to and including the stop marker
+                while stop_delete_key_consist not in line and stop_delete_key_not_consist in line:
+                    line = next(lines)
+                line = next(lines)
+            yield line
+    except StopIteration:
+        return
 # end helpers
+# service helpers
+def FindDatabaseWithName(name):
+    database_instances = projectOptions['databases']
+    for db in database_instances:
+        if list(db.values())[0]['name'] == name:
+            return list(db.values())[0]
+def FindEventBusWithName(name):
+    eventbus_instances = projectOptions['eventbus']
+    for bus in eventbus_instances:
+        if list(bus.values())[0]['name'] == name:
+            return list(bus.values())[0]
+# end service helpers
+# start .csproj helpers
+def HandleCsprojLogging(logging_service, host_csproj_path):
+    logging_enabled = 'logging' in logging_service
+    if logging_enabled:
+        if 'type' not in logging_service['logging']:
+            logging_type = 'serilog'
+        else:
+            logging_type = 'microsoft'
+    if(logging_enabled):
+        with open(os.path.join(host_csproj_path), 'r+') as f:
+            filtered = list(filter_sub_lines(f, 'region (logging','region ('+logging_type,'endregion (logging','endregion ('+logging_type))
+            f.seek(0)
+            f.writelines(filtered)
+            f.truncate()
+    else:
+        logging_type_start_line = 'region (logging)'
+        logging_type_end_line = 'endregion (logging)'
+        with open(os.path.join(host_csproj_path), 'r+') as f:
+                filtered = list(filter_lines(f, logging_type_start_line, logging_type_end_line))
+                f.seek(0)
+                f.writelines(filtered)
+                f.truncate()
+def HandleCsprojDatabase(service_options, host_csproj_path):
+    database_enabled = 'database' in service_options
+    
+    if(database_enabled):
+        database_instance = FindDatabaseWithName(service_options['database'])
+        database_type = database_instance['type']
+        with open(os.path.join(host_csproj_path), 'r+') as f:
+            filtered = list(filter_sub_lines(f, 'region (database','region ('+database_type,'endregion (database','endregion ('+database_type))
+            f.seek(0)
+            f.writelines(filtered)
+            f.truncate()
+    else:
+        with open(os.path.join(host_csproj_path), 'r+') as f:
+                filtered = list(filter_lines(f, 'region (database)', 'endregion (database)'))
+                f.seek(0)
+                f.writelines(filtered)
+                f.truncate()
+def HandleCsprojEventbus(service_options, host_csproj_path):
+    eventbus_enabled = 'eventbus' in service_options
+    
+    if(eventbus_enabled):
+        eventbus_instance = FindEventBusWithName(service_options['eventbus']['bus_instance'])
+        print ("ebus")
+        print (eventbus_instance)
+        eventbus_implement_with = service_options['eventbus']['implement_with']
+        eventbus_type = eventbus_instance['type']
+        with open(os.path.join(host_csproj_path), 'r+') as f:
+            filtered = list(filter_sub_lines(f, 'region (eventbus','region ('+eventbus_implement_with,'endregion (eventbus','endregion ('+eventbus_implement_with))
+            f.seek(0)
+            f.writelines(filtered)
+            f.truncate()
+    else:
+        with open(os.path.join(host_csproj_path), 'r+') as f:
+                filtered = list(filter_lines(f, 'region (eventbus)', 'endregion (eventbus)'))
+                f.seek(0)
+                f.writelines(filtered)
+                f.truncate()
+# end csproj helpers
 
 projectOptions = {}
 scriptPath = os.path.dirname(os.path.realpath(sys.argv[0]))
@@ -159,7 +275,6 @@ def BuildNginxConfiguration(server, api_services,clients, identity_services):
 
 def FindApiServicesUsesNginx(serverName):
     services = []
-    print(projectOptions['api_services'])
     for service in projectOptions['api_services']:
         for key, value in service.items():
             if value['server'] == serverName:
@@ -183,7 +298,6 @@ def HandleServers(servers):
     print ('Configuring servers')
     for server in servers:
         server_options = list(server.values())[0]
-        print(server_options)
         print('Scaffolding'+ server_options['name'])
         if server_options['type'] == 'nginx':
             nginxTemplateFolder = os.path.join(serversPath,'nginx')
@@ -202,14 +316,29 @@ def HandleServers(servers):
 
 
 def HandlePostgreSql(db_options):
-    # TODO: handle docker-compose override
+    default_postgre_options = {
+        db_options['name']:{
+            'image': 'postgres',
+            'container_name': db_options['name'],
+            'volumes': ['./postgres-data:/var/lib/postgresql/data'],
+            'networks':['localnet'],
+            'ports': ['5432:5432'],
+            'environment': {
+                'POSTGRES_DB': 'dev',
+                'POSTGRES_USER': 'doom',
+                'POSTGRES_PASSWORD': 'machine',
+            }
+        }
+    }
+    if 'docker_compose_set' in db_options:
+        default_postgre_options[db_options['name']].update(db_options['docker_compose_set'])  
     postgre_docker_options = {    
         db_options['name']:db_options['docker_compose_set']
     }
     dockerOptions['services'].append(postgre_docker_options)
 
 def HandleMySql(db_options):
-    default_options = {
+    default_mysql_options = {
         db_options['name']:{
             'image': 'mysql/mysql-server:5.7',
             'container_name': db_options['name'],
@@ -226,8 +355,8 @@ def HandleMySql(db_options):
         }
     }
     if 'docker_compose_set' in db_options:
-        default_options[db_options['name']].update(db_options['docker_compose_set'])    
-    dockerOptions['services'].append(default_options)
+        default_mysql_options[db_options['name']].update(db_options['docker_compose_set'])    
+    dockerOptions['services'].append(default_mysql_options)
 
 def FindRedisUsingServiceNames(redis_name):
     services = []
@@ -358,7 +487,6 @@ def FindApiServicesUsesIs4(i_service_name):
     return api_services
 def FindClientsUsesIs4(i_service_name):
     clients = []
-    print (i_service_name)
     for client in projectOptions['clients']:
         for key, value in client.items():            
             if 'authorization' in value:
@@ -367,7 +495,6 @@ def FindClientsUsesIs4(i_service_name):
     return clients
 
 def HandleIs4ClientConfiguration(clients, identity_service, is4_copy_folder):
-    print (clients)
     clients_txt_template_file = os.path.join(
         is4_copy_folder,
         'src',
@@ -388,28 +515,141 @@ def HandleIs4ClientConfiguration(clients, identity_service, is4_copy_folder):
         template_string = temp_file.read()
     client_config_as_cs = ""
     client_count = len(clients)
-    for index, client in enumerate(clients):
+    for client_ind, client in enumerate(clients):
         client_host = client['name'].lower()+'.localhost'
-        redirect_url_templ_val = InDbQ(client_host) +', \n' \
-        + '\t\t\t\t\t\t'+ InDbQ(client_host+'/silent-renew.html') +', \n' \
-        + '\t\t\t\t\t\t'+ InDbQ(client_host+'/login-callback.html')+'\n' 
+
+        redirect_url_templ_val = ( InDbQ(client_host) +',\n' 
+        + '\t\t\t\t\t\t'+ InDbQ(client_host+'/silent-renew.html') +',\n' 
+        + '\t\t\t\t\t\t'+ InDbQ(client_host+'/login-callback.html')) 
         
-        client_config_as_cs += template_string \
-            .replace('{{client:id}}',client['name']) \
-            .replace('{{client:name}}',client['name']) \
-            .replace('{{client:url}}',client_host) \
-            .replace('{{client:accesstokentype}}','AccessTokenType.Reference') \
-            .replace('{{client:redirecturls}}',redirect_url_templ_val)
-        if (index != len(clients)-1):
-            client_config_as_cs += ', \n'
+        post_logout_redirect_url_val = ( InDbQ(client_host) +',\n'
+        + '\t\t\t\t\t\t'+ InDbQ(client_host+'/loggedout'))
+
+        cors_origins_val = InDbQ(client_host) +',\n'
+
+        grant_type_val = 'GrantTypes.Implicit'
+        if client['type'].startswith('web'):
+            grant_type_val = 'GrantTypes.Implicit'
+        elif client['type'].startswith('native'):
+            grant_type_val = 'GrantTypes.ResourceOwnerPassword'
+        elif client['type'].startswith('mobile'):
+            grant_type_val = 'GrantTypes.ResourceOwnerPassword'
+        client_config_as_cs += (
+            template_string 
+            .replace('{{client:id}}',client['name']) 
+            .replace('{{client:name}}',client['name']) 
+            .replace('{{client:url}}',client_host) 
+            .replace('{{client:accesstokentype}}','AccessTokenType.Reference') 
+            .replace('{{client:redirecturls}}',redirect_url_templ_val) 
+            .replace('{{client:logoutredirecturls}}',post_logout_redirect_url_val)
+            .replace('{{client:corsorigins}}', cors_origins_val)
+            .replace('{{client:granttype}}',grant_type_val)
+            )
+        
+        if 'scopes' in client['authorization']:
+            scope_val = ''
+            scope_options = client['authorization']['scopes']
+            scope_count = len(scope_options)
+            for scope_index, scope in enumerate(scope_options):
+                if(scope_index != 0 ):
+                    scope_val  += '\t\t\t\t\t\t'
+                scope_val += InDbQ(scope)
+                if (scope_count-1 != scope_index):
+                    scope_val += ','
+                scope_val += '\n'
+            client_config_as_cs = client_config_as_cs.replace('{{client:scopes}}',scope_val)
+        if (client_ind != client_count-1):
+            client_config_as_cs += ',\n'
 
     with open(clients_cs_template_file,'r') as cs_file:
         cs_content = cs_file.read()
     os.remove(clients_cs_template_file)
+    os.remove(clients_txt_template_file)
     cs_content = cs_content.replace('//& replace (clients)', client_config_as_cs)
     with open(clients_cs_template_file,'w') as cs_file_new:
         cs_file_new.write(cs_content)
+        
+def HandleIs4ResourcesConfiguration(resources, identity_service, is4_copy_folder):
+    resources_txt_template_file = os.path.join(
+        is4_copy_folder,
+        'src',
+        'IdentityService',
+        'Host',
+        'Configuration',
+        'resource.config.txt'
+        )
+    resources_cs_template_file = os.path.join(
+        is4_copy_folder,
+        'src',
+        'IdentityService',
+        'Host',
+        'Configuration',
+        'Resources.cs'
+        )
+    with open(resources_txt_template_file) as temp_file:
+        template_string = temp_file.read()
+    resource_config_as_cs = ""
+    resource_count = len(resources)
+    for resource_ind, resource in enumerate(resources):
+        print (resource)
+        resource_host = resource['name'].lower()+'.localhost' 
+        resource_config_as_cs += (
+            template_string 
+            .replace('{{resource:name}}',resource['name'])
+            .replace('{{resource:displayname}}',resource['name'])
+            )
+        
+        if 'avaliable_scopes' in resource['authorization']:
+            scope_val = ''
+            scope_options = resource['authorization']['avaliable_scopes']
+            scope_count = len(scope_options)
+            for scope_index, scope in enumerate(scope_options):
+                if(scope_index != 0 ):
+                    scope_val  += '\t\t\t\t\t\t'
+                scope_val += 'new Scope() { Name='+InDbQ(scope)+'}'
+                if (scope_count-1 != scope_index):
+                    scope_val += ','
+                scope_val += '\n'
+            resource_config_as_cs = resource_config_as_cs.replace('{{resource:scopes}}',scope_val)
+        else: 
+            resource_config_as_cs = resource_config_as_cs.replace('{{resource:scopes}}','')
+        if 'user_claims' in resource['authorization']:
+            claims_val = ''
+            claims_options = resource['authorization']['user_claims']
+            claims_count = len(claims_options)
+            for claims_index, claim in enumerate(claims_options):
+                if(claims_index != 0 ):
+                    claims_val  += '\t\t\t\t\t\t'
+                claims_val += InDbQ(claim)
+                if (claims_count-1 != claims_index):
+                    claims_val += ','
+                claims_val += '\n'
+            resource_config_as_cs = resource_config_as_cs.replace('{{resource:userclaims}}',claims_val)
+        else:
+            resource_config_as_cs = resource_config_as_cs.replace('{{resource:userclaims}}','JwtClaimTypes.Scope')
+        if (resource_ind != resource_count-1):
+            resource_config_as_cs += ',\n'
 
+    with open(resources_cs_template_file,'r') as cs_file:
+        cs_content = cs_file.read()
+    os.remove(resources_cs_template_file)
+    os.remove(resources_txt_template_file)
+    cs_content = cs_content.replace('//& replace (apiresources)', resource_config_as_cs)
+    with open(resources_cs_template_file,'w') as cs_file_new:
+        cs_file_new.write(cs_content)
+
+def HanldeIs4Csproj(is4_options,is4_folder):
+    print ('Configuring Identity Server 4 csproj')
+    host_csproj_path = os.path.join(is4_folder,
+        'src',
+        'IdentityService',
+        'Host',
+        'Host.csproj')
+        
+    HandleCsprojLogging(is4_options,host_csproj_path)
+    HandleCsprojDatabase(is4_options,host_csproj_path)
+    HandleCsprojEventbus(is4_options,host_csproj_path)
+    
 def HandleIdentityServer4(identity_service):
     print('Moving Template Files...')
     is4_template_folder = os.path.join(identityServicesPath,'identityserver4ef')
@@ -420,15 +660,9 @@ def HandleIdentityServer4(identity_service):
     clients_using_is4 = FindClientsUsesIs4(identity_service['name'])
 
     HandleIs4ClientConfiguration(clients_using_is4,identity_service,is4_copy_folder)
-
-    resources_template_file = os.path.join(
-        is4_copy_folder,
-        'src',
-        'IdentityService',
-        'Host',
-        'Configuration',
-        'client.config.txt'
-        )
+    HandleIs4ResourcesConfiguration(api_services_using_is4,identity_service,is4_copy_folder)
+    HanldeIs4Csproj(identity_service,is4_copy_folder)
+    
 def HandleIdentityServices(identity_services):
     print ('Scaffolding Identity Services...')
     for i_service in identity_services:
@@ -479,12 +713,6 @@ while True:
 
     elif cmd=='help':
         print('See Github Documentation')
-
-    elif cmd=='create':
-        name, cost = args
-        cost = int(cost)
-        # ...
-        print('Created "{}", cost ${}'.format(name, cost))
 
     else:
         print('Unknown command: {}'.format(cmd))

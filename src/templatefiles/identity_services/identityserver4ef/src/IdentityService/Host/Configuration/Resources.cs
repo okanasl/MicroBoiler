@@ -27,7 +27,7 @@ namespace Host.Configuration
         {
             return new List<ApiResource>
             {                
-//& region (apiresources)
+//& replace (apiresources)
             };
         }
     }

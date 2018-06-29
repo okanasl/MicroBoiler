@@ -8,32 +8,35 @@
     <PackageReference Include="IdentityServer4.AspNetIdentity" Version="2.1.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="2.1.0" PrivateAssets="All" />    
   </ItemGroup>
-<!-- start (eventbus) -->
+<!-- region (eventbus) -->
+<!-- region (eventbus:masstransit) -->
   <ItemGroup>
     <PackageReference Include="MassTransit" Version="5.1.2" />
     <PackageReference Include="MassTransit.Extensions.DependencyInjection" Version="5.1.2" />
     <PackageReference Include="MassTransit.RabbitMq" Version="5.1.2" /> 
   </ItemGroup>
-<!-- end (eventbus) -->
-<!-- start (logging:serilog) -->
+<!-- endregion (eventbus:masstransit) -->
+<!-- endregion (eventbus) -->
+<!-- region (logging) -->
+<!-- region (logging:serilog) -->
   <ItemGroup>
     <PackageReference Include="Serilog" Version="2.6.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="3.1.1" />
     <PackageReference Include="Serilog.Extensions.Logging" Version="2.0.2" />
     <PackageReference Include="Serilog.Sinks.File" Version="4.0.0" />
   </ItemGroup>
-<!-- end (logging:serilog) -->
-
-<!-- start (database:postgresql) -->
+<!-- endregion (logging:serilog) -->
+<!-- endregion (logging) -->
+<!-- region (database:postgresql) -->
   <ItemGroup>
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="2.1.0" />   
   </ItemGroup>
-<!-- end (database:postgresql) -->
-<!-- start (database:mysql) --> 
+<!-- endregion (database:postgresql) -->
+<!-- region (database:mysql) --> 
   <ItemGroup>
     <PackageReference  Include="Pomelo.EntityFrameworkCore.MySql" Version="2.0.1" />
   </ItemGroup>
-<!-- end (database:mysql) -->
+<!-- endregion (database:mysql) -->
 
   <ItemGroup>
     <ProjectReference Include="..\IdentityServer4.EntityFramework\IdentityServer4.EntityFramework.csproj" />

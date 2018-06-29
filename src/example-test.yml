@@ -80,12 +80,12 @@ identity_services:
       name: myIdentityService
       eventbus: 
         bus_instance: rabbit_name
-        with: masstransit
+        implement_with: masstransit
       ports: [5000]
       server: myNginxServer
       docker_options:
-        build: in_container # OR in_dev_machine(copy publish directory)
-      logging: serilog
+        build: in_container # Only Option Right Now
+      # logging: serilog
       user_auth: 
         type: dotnet_identity
         database: 
@@ -107,17 +107,15 @@ api_services:
         build: build_container # OR build_dev (copy publish directory)
       eventbus: 
         bus_instance: rabbit_name
-        implement_with: masstransit
+        implement_implement_with: masstransit
       authorization:
         issuer: myIdentityService
         api_secret: myIdentityService_secret
         avaliable_scopes:
-         - openid
-         - profile
-         - email
-         - foo_api_read
-         - foo_api_write
-         - foo_api_fullaccess
+         - "openid"
+         - "profile"
+         - "email"
+         - "foo_api_fullaccess"
       database: 
         provider: postgre_name
         database_name: foo_api_db
@@ -134,12 +132,35 @@ api_services:
         issuer: myIdentityService
         secret: myIdentityService_bar_secret
         avaliable_scopes:
-         - openid
-         - profile
-         - email
-         - foo_api_read
-         - foo_api_write
-         - foo_api_fullaccess
+         - "openid"
+         - "profile"
+         - "email"
+         - "bar_api_read"
+         - "bar_api_write"
+         - "bar_api_fullaccess"
+        user_claims:
+         - "sub"
+         - "updated_at"
+         - "iat"
+         - "amr"
+         - "sid"
+         - "jti"
+         - "client_id"
+         - "scope"
+         - "role"
+         - "id"
+         - "exp"
+         - "aud"
+         - "name"
+         - "given_name"
+         - "family_name"
+         - "middle_name"
+         - "nickname"
+         - "preferred_username"
+         - "profile"
+         - "picture"
+         - "email_verified"
+         - "email"
       database: 
         provider: postgre_name
         database_name: bar_api_db
@@ -157,7 +178,7 @@ api_services:
       logging: serilog
 clients: 
    - web_1:
-      type: angular
+      type: web_angular_6
       name: myAngularClient
       add_npm_packages:
        - name: '@ngrx/store'
@@ -171,6 +192,19 @@ clients:
          - foo_api_fullaccess
          - bar_api_readonly
       ports: [4200]
+      server: myNginxServer
+   - web_2:
+      type: web_react_16
+      name: myReactClient
+      authorization: # using angular-oidc-client library
+        issuer: myIdentityService
+        scopes: 
+         - openid
+         - email
+         - profile
+         - foo_api_fullaccess
+         - bar_api_readonly
+      ports: [4100]
       server: myNginxServer
 
       
