@@ -4,6 +4,7 @@ import readline
 import fileinput
 import shlex
 from distutils.dir_util import copy_tree
+import shutil
 import yaml
 import os
 import sys
@@ -129,7 +130,7 @@ def HandleCsprojEventbus(service_options, host_csproj_path):
                 f.writelines(filtered)
                 f.truncate()
 # end csproj helpers
-
+# global
 projectOptions = {}
 scriptPath = os.path.dirname(os.path.realpath(sys.argv[0]))
 templatesPath = os.path.normpath(os.path.join(scriptPath,'templatefiles'))
@@ -144,17 +145,22 @@ dockerOptions = {'version' : 3, 'services': [], 'networks':[{'localnet':{'driver
 optionsFilePath = ""
 projectDir = ""
 srcDir = ""
-
-print('Enter a command')
-print('To get help, enter `help`.')
+# end global
 
 def CreateProjectDirectory(projectName):
     print ("Scaffolding Project", projectName)
     directory = os.path.normpath(os.path.join(scriptPath, optionsFilePath,'../'))
     projectDir = os.path.normpath(os.path.join(directory, projectName))
     srcDir = os.path.normpath(os.path.join(projectDir,"src"))
-    if not os.path.exists(srcDir):
-        os.makedirs(srcDir)
+    if os.path.exists(srcDir):
+        print ('There is already a project generated. Do you want to delete it ?\n Y(Yes)/N(No)')
+        cmd = input('> ')
+        print (cmd)
+        if cmd.lower() != 'y':
+            quit()
+        else:
+            shutil.rmtree(projectDir)
+            os.makedirs(srcDir)
     # Create README.md
     f = open(os.path.normpath(os.path.join(projectDir,'README.md')), 'w+')
     f.write('#'+projectName)
@@ -203,12 +209,12 @@ def BuildNginxConfiguration(server, api_services,clients, identity_services):
     events = nginx.Events()
     httpConf = nginx.Http()
     # Add Event Configuration
-    if not ('events' in serverConfig):
+    if ('events' in serverConfig):
         for key, value in serverConfig['events'].items():        
             events.add(nginx.Key(key,value))
     config.add(events)
     # Add Http Configuration Values
-    if not ('http' in serverConfig):
+    if ('http' in serverConfig):
         for key,value in serverConfig['http'].items():
             httpConf.add(nginx.Key(key,value))  
     # Add Services To Http
@@ -269,7 +275,7 @@ def BuildNginxConfiguration(server, api_services,clients, identity_services):
         )
         nginxServer.add(location)
         httpConf.add(nginxServer)
-        config.add(httpConf)
+    config.add(httpConf)
     return config
     
 
@@ -446,14 +452,14 @@ def HandleRabbitMq(rabbit_options):
         'image': 'rabbitmq:3-management-alpine',
         'container_name': rabbit_options['name'],
         'volumes': ['rabbit-volume:/var/lib/rabbitmq'],
-        'ports': ['15672:15672','5672:5672','5671:5671'], # Management Publish And Sub Ports
+        'ports': ['15672:15672','5672:5672','5671:5671'], # Management, Publish And Sub Ports
         'environment': {
             'RABBITMQ_DEFAULT_PASS':'machine',
             'RABBITMQ_DEFAULT_USER' : 'doom',
         },
         'networks': ['localnet'],
         'healthcheck': {
-            'test': ["CMD", "curl", "-f", "http://localhost:15672"],
+            'test': ['"CMD"',' "curl"', '"-f"',' "http://localhost:15672"'],
             'interval': '30s',
             'timeout': '10s',
             'retries': '5'
@@ -600,6 +606,7 @@ def HandleIs4ResourcesConfiguration(resources, identity_service, is4_copy_folder
             )
         
         if 'avaliable_scopes' in resource['authorization']:
+            print ('Configuring Avaliable Scopes...')
             scope_val = ''
             scope_options = resource['authorization']['avaliable_scopes']
             scope_count = len(scope_options)
@@ -614,6 +621,7 @@ def HandleIs4ResourcesConfiguration(resources, identity_service, is4_copy_folder
         else: 
             resource_config_as_cs = resource_config_as_cs.replace('{{resource:scopes}}','')
         if 'user_claims' in resource['authorization']:
+            print ('Configuring User Claims...')
             claims_val = ''
             claims_options = resource['authorization']['user_claims']
             claims_count = len(claims_options)
@@ -645,11 +653,26 @@ def HanldeIs4Csproj(is4_options,is4_folder):
         'IdentityService',
         'Host',
         'Host.csproj')
-        
+    host_eflib_csproj_path = os.path.join(is4_folder,
+        'src',
+        'IdentityService',
+        'IdentityServer4.EntityFramework',
+        'IdentityServer4.EntityFramework.csproj')
+    # Handle Host Application
     HandleCsprojLogging(is4_options,host_csproj_path)
     HandleCsprojDatabase(is4_options,host_csproj_path)
     HandleCsprojEventbus(is4_options,host_csproj_path)
-    
+    # Handle Ef Library
+    HandleCsprojDatabase(is4_options, host_eflib_csproj_path)
+def HanldeIs4StartupFile(is4_options,is4_folder):
+    print ('Configuring Identity Server 4 csproj')
+    host_startup_path = os.path.join(is4_folder,
+        'src',
+        'IdentityService',
+        'Host',
+        'Startup.cs')
+
+
 def HandleIdentityServer4(identity_service):
     print('Moving Template Files...')
     is4_template_folder = os.path.join(identityServicesPath,'identityserver4ef')
@@ -670,6 +693,9 @@ def HandleIdentityServices(identity_services):
         if (i_service_options['type']=='identityserver4'):
             HandleIdentityServer4(i_service_options)
     
+
+print('Enter a command')
+print('To get help, enter `help`.')
 while True:
     cmd, *args = shlex.split(input('> '))
     if cmd=='boile':

@@ -51,7 +51,7 @@ namespace DotnetWebApi
         {
             
 //& region (database)
-            string connectionString = "{{database:connectionString}}";
+            string connectionString = "@{{database:connectionString}}";
     //& region (mssql)
             services.AddDbContext<NameContext>(options =>
                 options.UseSqlServer(connectionString)
@@ -69,22 +69,21 @@ namespace DotnetWebApi
     //& endregion (postgresql)
 //& endregion (database)
 //& region (cache)
-    //& region (redis)
+    //& region (cache:redis)
             services.AddDistributedRedisCache(option =>
             {
                 option.Configuration = "{{redis_options:connection}}";
                 option.InstanceName = "{{redis_options:instance_name}}";
             });
-    //& endregion (redis)
-    //& region (memory)
+    //& endregion (cache:redis)
+    //& region (cache:memory)
             services.AddMemoryCache(options => {
                 // Your options
             });            
-    //& endregion (memory)
+    //& endregion (cache:memory)
 //& endregion (cache)
 //& region (authorization)
             // Use In your controller like
-            // [Authorize(Policy = "Your_Authorization")]
             services.AddAuthorization(options =>
             {
                 options.AddPolicy("Your_Authorization", policyUser =>
@@ -93,7 +92,7 @@ namespace DotnetWebApi
                     // policyUser.RequireRole("fso.api.user");
                 });
             });
-    //& region (identityserver4)
+    //& region (authorization:identityserver4)
             services.AddAuthentication(IdentityServerAuthenticationDefaults.AuthenticationScheme)
                .AddIdentityServerAuthentication(options =>
                {
@@ -103,7 +102,7 @@ namespace DotnetWebApi
                    options.RequireHttpsMetadata = false;
                    options.SupportedTokens = SupportedTokens.Both;
                });
-    //& endregion identityserver4
+    //& endregion (authorization:identityserver4)
 //& endregion
 //& region (eventbus)
     //& region (eventbus:rabbitmq)
@@ -186,7 +185,7 @@ namespace DotnetWebApi
             });
 //& endregion (server)
             app.UseCors("CorsPolicy");
-            // app.UseHttpsRedirection(); After you configure with nginx
+            // app.UseHttpsRedirection(); After you configure SSL with nginx
             app.UseMvc();
         }
     }

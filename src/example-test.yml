@@ -1,11 +1,18 @@
 version: 0.1
 name: ExampleApp
+dotnet_class_libs:
+  - core:
+      name: MyApp.Core # required
+      framework: netstandard2.0 # default (netstandard1.3)
+  - events_core:
+      name: MyApp.EventCore
+      framework: netstandard2.0
 servers: 
    - nginx_instance_v1:
-      type: nginx
-      name : myNginxServer
+      type: nginx  # required (default)
+      name : myNginxServer # required
       ports: [80,443] # Default HTTP and HTTPS ports
-      config: # example (default) config
+      config: # example (default) config 
         worker-process: '1'
         events:
           worker-connections: '1024'
@@ -24,7 +31,7 @@ databases:
       type: postgresql
       name: postgre_name
       ports: [6379]
-      docker_compose_set: # optional (default values)
+      docker_compose_set: # optional (default values) set yours to override
         image: postgres
         container_name: my_postgre_container
         volumes:
@@ -34,8 +41,8 @@ databases:
           POSTGRES_USER: doom
           POSTGRES_DB: dev
    - mysql_instance:
-      type: mysql
-      name: my_mysql_server
+      type: mysql # required
+      name: my_mysql_server # required
       ports: [3306] # default port
       docker_compose_set: # optional (default values below)
         container_name: mysqlc
@@ -55,8 +62,8 @@ databases:
       ports: [6379]
 eventbus:
    - rabbitmq_instance_v1:
-      type: rabbitmq
-      name: rabbit_name
+      type: rabbitmq # required
+      name: rabbit_name # required
       docker_compose_set: # defalt docker override options
         image: rabbitmq:3-management-alpine
         container_name: rabbitmqc
@@ -85,33 +92,33 @@ identity_services:
       server: myNginxServer
       docker_options:
         build: in_container # Only Option Right Now
-      # logging: serilog
+      logging: serilog
       user_auth: 
-        type: dotnet_identity
-        database: 
-          provider: postgre_name
-          database_name: my_identity_db
+        type: aspnet_identity
+        use_database: # required
+          provider: postgre_name # required
+          database_name: my_identity_db # required
           create_database: true
           create_admin_account: true
-          admin_account:
-            email: admin@admin.com
-            password: DooMachine-1
-            roles: # Create if not exist
-             - superadmin
-             - admin
+          admin_account: # optional
+            email: admin@admin.com # default
+            password: DooMachine-1 # default
+            roles: # Create roles if not exist already
+             - superadmin # default
+             - admin # default
 api_services: 
    - foo_api:
       type: dotnet_web_api
       name: myFooApi
       docker_options:
         build: build_container # OR build_dev (copy publish directory)
-      eventbus: 
-        bus_instance: rabbit_name
-        implement_implement_with: masstransit
-      authorization:
-        issuer: myIdentityService
-        api_secret: myIdentityService_secret
-        avaliable_scopes:
+      eventbus: # optional
+        bus_instance: rabbit_name # required
+        implement_implement_with: masstransit # default
+      authorization: # optional
+        issuer: myIdentityService # required
+        api_secret: myIdentityService_secret # optional
+        avaliable_scopes: # openid, profile , email default values
          - "openid"
          - "profile"
          - "email"
@@ -120,10 +127,10 @@ api_services:
         provider: postgre_name
         database_name: foo_api_db
         create_database: true
-      cache:
-        type: memory
-      ports: [7000]
-      server: myNginxServer
+      cache: # optional
+        type: memory # required
+      ports: [7000] # optional (random if not set)
+      server: myNginxServer # optional
       logging: serilog
    - bar_api:
       type: dotnet_web_api

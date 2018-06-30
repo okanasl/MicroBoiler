@@ -44,18 +44,35 @@ namespace Host
 
         public IServiceProvider ConfigureServices(IServiceCollection services)
         {
-            const string userconnectionString = @"Server=localhost;Database=user_db;Username=doom;Password=machine";
-            const string connectionString = @"Server=localhost;Database=config_db;Username=doom;Password=machine";
+
             var migrationsAssembly = typeof(Startup).GetTypeInfo().Assembly.GetName().Name;
             
+//& region (database)
+            const string userconnectionString = @"{{database:usersconnectionstring}}";
+            const string connectionString = @"{{database:configconnectionstring}}";
+    //& region (mssql)
             services.AddDbContext<UserDbContext>(options =>
-                options.UseNpgsql(userconnectionString,
-                            sql => sql.MigrationsAssembly(migrationsAssembly)));
-
+                options.UseSqlServer(userconnectionString)
+                );
+    //& endregion (mssql)
+    //& region (mysql)
+            services.AddDbContext<UserDbContext>(options =>
+                options.UseMySql(userconnectionString)
+                );
+    //& endregion (mysql)
+    //& region (postgresql)
+            services.AddDbContext<UserDbContext>(options =>
+                options.UseNpgsql(userconnectionString)
+                );
+    //& endregion (postgresql)
+//& endregion (database)
             services.AddIdentity<ApplicationUser, ApplicationRole>()
                 .AddEntityFrameworkStores<UserDbContext>();
             
             
+            services.AddTransient<IEmailSender, AuthMessageSender>();
+            services.AddTransient<ISmsSender, AuthMessageSender>();
+
             services.AddIdentityServer(options =>
                 {
                     options.Events.RaiseSuccessEvents = true;
@@ -66,36 +83,90 @@ namespace Host
                 .AddDeveloperSigningCredential()
                 // .AddTestUsers(TestUsers.Users)
                 .AddAspNetIdentity<ApplicationUser>()
+                // You can Configure Profile Service for your needs
                 .AddProfileService<AuthProfileService>()
                 // this adds the config data from DB (clients, resources, CORS)
                 .AddConfigurationStore(options =>
                 {
                     options.ResolveDbContextOptions = (provider, builder) =>
                     {
+//& region (database)
+    //& region (mssql)
+                        builder.UseSqlServer(connectionString,
+                            sql => sql.MigrationsAssembly(migrationsAssembly));                    
+    //& endregion (mssql)
+    //& region (postgresql)
                         builder.UseNpgsql(connectionString,
-                            sql => sql.MigrationsAssembly(migrationsAssembly));
+                            sql => sql.MigrationsAssembly(migrationsAssembly));                    
+    //& endregion (postgresql)
+    //& region (mysql)
+                        builder.UseMySql(connectionString,
+                            sql => sql.MigrationsAssembly(migrationsAssembly));                    
+    //& endregion (mysql)
+//& endregion (database)
                     };
-                    //options.ConfigureDbContext = builder =>
-                    //    builder.UseSqlServer(connectionString,
-                    //        sql => sql.MigrationsAssembly(migrationsAssembly));
                 })
                 // this adds the operational data from DB (codes, tokens, consents)
                 .AddOperationalStore(options =>
                 {
+//& region (database)
+    //& region (mssql)
+                    options.ConfigureDbContext = builder =>
+                        builder.UseSqlServer(connectionString,
+                            sql => sql.MigrationsAssembly(migrationsAssembly));
+    //& endregion (mssql)
+    //& region (postgresql)
                     options.ConfigureDbContext = builder =>
                         builder.UseNpgsql(connectionString,
                             sql => sql.MigrationsAssembly(migrationsAssembly));
-
+    //& endregion (postgresql)
+    //& region (mysql)
+                    options.ConfigureDbContext = builder =>
+                        builder.UseMySql(connectionString,
+                            sql => sql.MigrationsAssembly(migrationsAssembly));
+    //& endregion (mysql)
+//& region (database)
                     // this enables automatic token cleanup. this is optional.
                     options.EnableTokenCleanup = true;
                     // options.TokenCleanupInterval = 10; // interval in seconds, short for testing
-                });
-                //.AddConfigurationStoreCache();
+                })
+                .AddConfigurationStoreCache();
 
+
+
+//& region (eventbus)
+    //& region (eventbus:rabbitmq)
+            services.AddMassTransit(p=>{
+                // p.AddConsumer<SomeEventHappenedConsumer>();
+            });
+            services.AddSingleton(provider => Bus.Factory.CreateUsingRabbitMq(cfg =>
+            {
+                var host = cfg.Host("localhost", "/", h => {
+                    h.Username("{{rabbitmq:user:username}}");
+                    h.Password("{{rabbitmq:user:password}}");
+                });
+
+                cfg.ReceiveEndpoint(host, e =>
+                {
+                    e.PrefetchCount = 8;
+                    // Add Your Event Consumers Here
+                    // If you want Inject services to consumer, pass provider param
+                    // e.Consumer<SomeEventHappenedConsumer>(provider)
+                });
+            }));
+
+            services.AddSingleton<IPublishEndpoint>(provider => provider.GetRequiredService<IBusControl>());
+            services.AddSingleton<ISendEndpointProvider>(provider => provider.GetRequiredService<IBusControl>());
+            services.AddSingleton<IBus>(provider => provider.GetRequiredService<IBusControl>());
+            // Register with IHostedService To Start bus in Application Start
+            services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService, BusService>();
+    //& endregion (eventbus:rabbitmq)
+//& endregion (eventbus)
             services.AddSingleton<LocService>();
             services.AddLocalization(options => options.ResourcesPath = "Resources");
             services.AddScoped<ClientIdFilter>();
             services.AddScoped<ClientSelector>();
+
             services.Configure<RazorViewEngineOptions>(options =>
             {
                 options.ViewLocationExpanders.Add(new ClientViewLocationExpander());
@@ -108,8 +179,7 @@ namespace Host
                     {
                         new CultureInfo("en-US"),
                         new CultureInfo("de-CH"),
-                        new CultureInfo("fr-CH"),
-                        new CultureInfo("it-CH")
+                        new CultureInfo("fr-CH")
                     };
 
                 options.DefaultRequestCulture = new RequestCulture(culture: "en-US", uiCulture: "en-US");
@@ -141,42 +211,20 @@ namespace Host
                         return factory.Create("SharedResource", assemblyName.Name);
                     };
                 });
-            services.AddTransient<IEmailSender, AuthMessageSender>();
-            services.AddTransient<ISmsSender, AuthMessageSender>();
-
-
-            // MASSTRANSIT 
-            services.AddMassTransit(p=>{
-                // p.AddConsumer<SomeEventHappenedConsumer>();
-            });
-            services.AddSingleton(provider => Bus.Factory.CreateUsingRabbitMq(cfg =>
-            {
-                var host = cfg.Host("localhost", "/", h => {
-                    h.Username("doom");
-                    h.Password("machine");
-                });
-
-                cfg.ReceiveEndpoint(host, e =>
-                {
-                    e.PrefetchCount = 8;
-                    // Add Every Event Consumers Here
-                });
-            }));
-
-            services.AddSingleton<IPublishEndpoint>(provider => provider.GetRequiredService<IBusControl>());
-            services.AddSingleton<ISendEndpointProvider>(provider => provider.GetRequiredService<IBusControl>());
-            services.AddSingleton<IBus>(provider => provider.GetRequiredService<IBusControl>());
-            // Register with IHostedService To Start bus in Application Start
-            services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService, BusService>();
 
             return services.BuildServiceProvider(validateScopes: false);
         }
 
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env
+//& region (logging)
+            ,ILoggerFactory loggerFactory
+//& endregion (logging)
+        )
         {
+//& region (logging)
             loggerFactory.AddConsole(_config.GetSection("Logging"));
             loggerFactory.AddDebug();
-
+//& endregion (logging)
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
