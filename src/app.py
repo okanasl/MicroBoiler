@@ -8,7 +8,6 @@ import shutil
 import yaml
 import os
 import sys
-from string import Template
 import nginx
 # declare script scope
 dotnet_logging_types = ['microsoft','serilog']
@@ -17,7 +16,14 @@ database_types = ['postgresql','mysql','mssql']
 # helpers
 def InDbQ(value):
     return '\"'+value+'\"'
-
+def replace_tamplate_file(filepath,replace_dict):
+    with open(filepath,'r') as cs_file:
+        cs_content = cs_file.read()
+    os.remove(filepath)
+    for key, value in replace_dict.items():
+        cs_content = cs_content.replace(key,value)
+    with open(filepath,'w') as cs_file_new:
+        cs_file_new.write(cs_content)
 def filter_lines(file, start_delete_key, stop_delete_key):
     """
     Given a file handle, generate all lines except those between the specified
@@ -57,6 +63,14 @@ def filter_sub_lines(
             yield line
     except StopIteration:
         return
+def BuildDatabaseConnectionString(database_type,server_host,database_name,user,password):
+    
+    if(database_type == "mysql"):
+        return "Server={0};Database={1};Uid={2};Pwd={3};CharSet=utf8mb4;".format(server_host,database_name,user,password)
+    elif (database_type == 'postgresql'):
+        return "Server={0};Database={1};Username={2};Password={3}".format(server_host,database_name,user,password)
+    elif (database_type == 'mssql'):
+        return "Data Source={0};Initial Catalog={1};User Id={2};Password={3}".format(server_host,database_name,user,password)
 # end helpers
 # service helpers
 def FindDatabaseWithName(name):
@@ -80,13 +94,13 @@ def HandleCsprojLogging(logging_service, host_csproj_path):
             logging_type = 'microsoft'
     if(logging_enabled):
         with open(os.path.join(host_csproj_path), 'r+') as f:
-            filtered = list(filter_sub_lines(f, 'region (logging','region ('+logging_type,'endregion (logging','endregion ('+logging_type))
+            filtered = list(filter_sub_lines(f, 'region (logging','region ('+logging_type,'end (logging','end ('+logging_type))
             f.seek(0)
             f.writelines(filtered)
             f.truncate()
     else:
         logging_type_start_line = 'region (logging)'
-        logging_type_end_line = 'endregion (logging)'
+        logging_type_end_line = 'end (logging)'
         with open(os.path.join(host_csproj_path), 'r+') as f:
                 filtered = list(filter_lines(f, logging_type_start_line, logging_type_end_line))
                 f.seek(0)
@@ -96,16 +110,16 @@ def HandleCsprojDatabase(service_options, host_csproj_path):
     database_enabled = 'database' in service_options
     
     if(database_enabled):
-        database_instance = FindDatabaseWithName(service_options['database'])
+        database_instance = FindDatabaseWithName(service_options['database']['provider'])
         database_type = database_instance['type']
         with open(os.path.join(host_csproj_path), 'r+') as f:
-            filtered = list(filter_sub_lines(f, 'region (database','region ('+database_type,'endregion (database','endregion ('+database_type))
+            filtered = list(filter_sub_lines(f, 'region (database','region ('+database_type,'end (database','end ('+database_type))
             f.seek(0)
             f.writelines(filtered)
             f.truncate()
     else:
         with open(os.path.join(host_csproj_path), 'r+') as f:
-                filtered = list(filter_lines(f, 'region (database)', 'endregion (database)'))
+                filtered = list(filter_lines(f, 'region (database)', 'end (database)'))
                 f.seek(0)
                 f.writelines(filtered)
                 f.truncate()
@@ -119,19 +133,20 @@ def HandleCsprojEventbus(service_options, host_csproj_path):
         eventbus_implement_with = service_options['eventbus']['implement_with']
         eventbus_type = eventbus_instance['type']
         with open(os.path.join(host_csproj_path), 'r+') as f:
-            filtered = list(filter_sub_lines(f, 'region (eventbus','region ('+eventbus_implement_with,'endregion (eventbus','endregion ('+eventbus_implement_with))
+            filtered = list(filter_sub_lines(f, 'region (eventbus','region ('+eventbus_implement_with,'end (eventbus','end ('+eventbus_implement_with))
             f.seek(0)
             f.writelines(filtered)
             f.truncate()
     else:
         with open(os.path.join(host_csproj_path), 'r+') as f:
-                filtered = list(filter_lines(f, 'region (eventbus)', 'endregion (eventbus)'))
+                filtered = list(filter_lines(f, 'region (eventbus)', 'end (eventbus)'))
                 f.seek(0)
                 f.writelines(filtered)
                 f.truncate()
 # end csproj helpers
 # global
 projectOptions = {}
+rememberize = {}
 scriptPath = os.path.dirname(os.path.realpath(sys.argv[0]))
 templatesPath = os.path.normpath(os.path.join(scriptPath,'templatefiles'))
 serversPath = os.path.join(templatesPath,'servers')
@@ -152,15 +167,8 @@ def CreateProjectDirectory(projectName):
     directory = os.path.normpath(os.path.join(scriptPath, optionsFilePath,'../'))
     projectDir = os.path.normpath(os.path.join(directory, projectName))
     srcDir = os.path.normpath(os.path.join(projectDir,"src"))
-    if os.path.exists(srcDir):
-        print ('There is already a project generated. Do you want to delete it ?\n Y(Yes)/N(No)')
-        cmd = input('> ')
-        print (cmd)
-        if cmd.lower() != 'y':
-            quit()
-        else:
-            shutil.rmtree(projectDir)
-            os.makedirs(srcDir)
+    if not os.path.exists(srcDir):
+        os.makedirs(srcDir)
     # Create README.md
     f = open(os.path.normpath(os.path.join(projectDir,'README.md')), 'w+')
     f.write('#'+projectName)
@@ -208,12 +216,12 @@ def BuildNginxConfiguration(server, api_services,clients, identity_services):
             config.add(nginx.Key(key,value))
     events = nginx.Events()
     httpConf = nginx.Http()
-    # Add Event Configuration
+    # Add Event Configurations
     if ('events' in serverConfig):
         for key, value in serverConfig['events'].items():        
             events.add(nginx.Key(key,value))
     config.add(events)
-    # Add Http Configuration Values
+    # Add Http Configurations
     if ('http' in serverConfig):
         for key,value in serverConfig['http'].items():
             httpConf.add(nginx.Key(key,value))  
@@ -384,7 +392,6 @@ def HandleRedisDatabase(db_options):
     redis_project_folder = os.path.join(projectDir, db_options['name'])
     if not os.path.exists(redis_project_folder):
         os.makedirs(redis_project_folder)
-    copy_tree(redis_template_folder,redis_project_folder)
     #Copy template (config and Dockerfile)
     copy_tree(redis_template_folder,redis_project_folder)
     redis_docker_options = {
@@ -452,18 +459,12 @@ def HandleRabbitMq(rabbit_options):
         'image': 'rabbitmq:3-management-alpine',
         'container_name': rabbit_options['name'],
         'volumes': ['rabbit-volume:/var/lib/rabbitmq'],
-        'ports': ['15672:15672','5672:5672','5671:5671'], # Management, Publish And Sub Ports
+        'ports': ['15672:15672','5672:5672','5671:5671'], # Management, Publish And Subsucribe Ports
         'environment': {
             'RABBITMQ_DEFAULT_PASS':'machine',
             'RABBITMQ_DEFAULT_USER' : 'doom',
         },
         'networks': ['localnet'],
-        'healthcheck': {
-            'test': ['"CMD"',' "curl"', '"-f"',' "http://localhost:15672"'],
-            'interval': '30s',
-            'timeout': '10s',
-            'retries': '5'
-        },
         'links':rabbit_identity_services + rabbit_api_services # may be unnecessary
     }
     if 'docker_compose_set' in rabbit_options:
@@ -662,8 +663,6 @@ def HanldeIs4Csproj(is4_options,is4_folder):
     HandleCsprojLogging(is4_options,host_csproj_path)
     HandleCsprojDatabase(is4_options,host_csproj_path)
     HandleCsprojEventbus(is4_options,host_csproj_path)
-    # Handle Ef Library
-    HandleCsprojDatabase(is4_options, host_eflib_csproj_path)
 def HanldeIs4StartupFile(is4_options,is4_folder):
     print ('Configuring Identity Server 4 csproj')
     host_startup_path = os.path.join(is4_folder,
@@ -671,8 +670,66 @@ def HanldeIs4StartupFile(is4_options,is4_folder):
         'IdentityService',
         'Host',
         'Startup.cs')
+def BuildConnStringForIs4(identity_options):
+    database_instance_name = identity_options['database']['provider']
+    database_instance = FindDatabaseWithName(database_instance_name)
+    database_type = database_instance['type']
+    user_connection_string ='' 
+    config_connection_string = ''
+    user = 'doom'
+    password = 'machine'
+    if database_type=='mysql':
+        if 'docker_compose_set' in database_instance:
+            if 'environment' in database_instance['docker_compose_set']:
+                if 'MYSQL_USER' in database_instance['docker_compose_set']['environment']:
+                    user = database_instance['docker_compose_set']['environment']['MYSQL_USER']
+                if 'MYSQL_PASSWORD' in database_instance['docker_compose_set']['environment']:
+                    password = database_instance['docker_compose_set']['environment']['MYSQL_PASSWORD']
+    if database_type=='postgresql':
+        if 'docker_compose_set' in database_instance:
+            if 'environment' in database_instance['docker_compose_set']:
+                if 'POSTGRES_USER' in database_instance['docker_compose_set']['environment']:
+                    user = database_instance['docker_compose_set']['environment']['POSTGRES_USER']
+                if 'POSTGRES_PASSWORD' in database_instance['docker_compose_set']['environment']:
+                    password = database_instance['docker_compose_set']['environment']['POSTGRES_PASSWORD']
+    user_connection_string = BuildDatabaseConnectionString(database_type,database_instance['name'],identity_options['name']+'_users',user,password)        
+    config_connection_string = BuildDatabaseConnectionString(database_type,database_instance['name'],identity_options['name']+'_config',user,password)
+    return user_connection_string, config_connection_string
+def HandleConnectionStringForIs4(identity_options ,is4_copy_folder):
+    userConnString, configConnString =  BuildConnStringForIs4(identity_options)
+    startup_file_path = os.path.join(is4_copy_folder,'src','IdentityService','Host','Startup.cs')
+    with open(startup_file_path,'r') as cs_file:
+        cs_content = cs_file.read()
+    os.remove(startup_file_path)
+    cs_content = (cs_content
+    .replace('{{database:usersconnectionstring}}', userConnString)
+    .replace('{{database:configconnectionstring}}',configConnString)
+    )
+    with open(startup_file_path,'w') as cs_file_new:
+        cs_file_new.write(cs_content)
 
-
+def HandleEventBusForIs4(i_srv, is4_copy_folder):
+    eventbus_srv = FindEventBusWithName(i_srv['eventbus']['bus_instance'])
+    startup_file_path = os.path.join(is4_copy_folder,'src','IdentityService','Host','Startup.cs')
+    repleceDict = {
+        '{{rabbitmq:host}}': eventbus_srv['name']
+    }
+    if 'docker_compose_set' in eventbus_srv:
+        if 'environment' in eventbus_srv['docker_compose_set']:
+            if 'RABBITMQ_DEFAULT_USER' in eventbus_srv['docker_compose_set']['environment']:
+                repleceDict['{{rabbitmq:user:username}}'] = eventbus_srv['docker_compose_set']['environment']['RABBITMQ_DEFAULT_USER']
+            if 'RABBITMQ_DEFAULT_PASSWORD' in eventbus_srv['docker_compose_set']['environment']:
+                repleceDict['{{rabbitmq:user:password}}'] = eventbus_srv['docker_compose_set']['environment']['RABBITMQ_DEFAULT_PASSWORD']
+            else:
+                repleceDict['{{rabbitmq:user:username}}'] = 'doom'
+                repleceDict['{{rabbitmq:user:password}}'] = 'machine'
+        else:
+            repleceDict['{{rabbitmq:user:username}}'] = 'doom'
+            repleceDict['{{rabbitmq:user:password}}'] = 'machine'
+    else:
+        repleceDict['{{rabbitmq:user:username}}'] = 'doom'
+        repleceDict['{{rabbitmq:user:password}}'] = 'machine'
+    replace_tamplate_file(startup_file_path, repleceDict)
 def HandleIdentityServer4(identity_service):
     print('Moving Template Files...')
     is4_template_folder = os.path.join(identityServicesPath,'identityserver4ef')
@@ -685,7 +742,9 @@ def HandleIdentityServer4(identity_service):
     HandleIs4ClientConfiguration(clients_using_is4,identity_service,is4_copy_folder)
     HandleIs4ResourcesConfiguration(api_services_using_is4,identity_service,is4_copy_folder)
     HanldeIs4Csproj(identity_service,is4_copy_folder)
-    
+    HandleConnectionStringForIs4(identity_service ,is4_copy_folder)
+    if 'eventbus' in identity_service:
+        HandleEventBusForIs4(identity_service, is4_copy_folder)
 def HandleIdentityServices(identity_services):
     print ('Scaffolding Identity Services...')
     for i_service in identity_services:
@@ -704,10 +763,10 @@ while True:
             try:
                 # Load Yaml
                 projectOptions = yaml.load(stream)
-                projectName = projectOptions['name']
-                if(projectName is None):
+                if not ('name' in projectOptions):
                     print('Please Provide a valid project_name')
                     break
+                projectName = projectOptions['name']
                 # Create Project Files
                 projectDir, srcDir = CreateProjectDirectory(projectName)
 

@@ -27,8 +27,8 @@ namespace DotnetWebApi
                 .WriteTo.File(@"logs.txt")
                 .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level}] {SourceContext}{NewLine}{Message:lj}{NewLine}{Exception}{NewLine}", theme: AnsiConsoleTheme.Literate)
                 .CreateLogger();
-    //& endregion (logging:serilog)
-//& endregion (logging)            
+    //& end (logging:serilog)
+//& end (logging)            
             CreateWebHostBuilder(args).Build().Run();
         }
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
@@ -40,8 +40,8 @@ namespace DotnetWebApi
                         builder.ClearProviders();
                         builder.AddSerilog();
                     })
-    //& endregion (logging:serilog)
-//& endregion (logging)
+    //& end (logging:serilog)
+//& end (logging)
                 .UseStartup<Startup>();
                 
     }

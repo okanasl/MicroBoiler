@@ -2,10 +2,10 @@ version: 0.1
 name: ExampleApp
 dotnet_class_libs:
   - core:
-      name: MyApp.Core # required
-      framework: netstandard2.0 # default (netstandard1.3)
+      name: ExampleApp.Core # required
+      framework: netstandard1.3 # default (netstandard2.0)
   - events_core:
-      name: MyApp.EventCore
+      name: ExampleApp.EventCore
       framework: netstandard2.0
 servers: 
    - nginx_instance_v1:
@@ -76,11 +76,6 @@ eventbus:
         environment:
           RABBITMQ_DEFAULT_PASS: machine
           RABBITMQ_DEFAULT_USER: doom
-        healthcheck:
-          test: ["CMD", "curl", "-f", "http://localhost:15672"]
-          interval: 30s
-          timeout: 10s
-          retries: 5  
 identity_services:
    - identityserver_v1:
       type: identityserver4
@@ -90,28 +85,14 @@ identity_services:
         implement_with: masstransit
       ports: [5000]
       server: myNginxServer
-      docker_options:
-        build: in_container # Only Option Right Now
       logging: serilog
-      user_auth: 
-        type: aspnet_identity
-        use_database: # required
-          provider: postgre_name # required
-          database_name: my_identity_db # required
-          create_database: true
-          create_admin_account: true
-          admin_account: # optional
-            email: admin@admin.com # default
-            password: DooMachine-1 # default
-            roles: # Create roles if not exist already
-             - superadmin # default
-             - admin # default
+      user_auth: aspnet_identity # only option
+      database: # required
+        provider: postgre_name # required
 api_services: 
    - foo_api:
       type: dotnet_web_api
       name: myFooApi
-      docker_options:
-        build: build_container # OR build_dev (copy publish directory)
       eventbus: # optional
         bus_instance: rabbit_name # required
         implement_implement_with: masstransit # default
@@ -135,6 +116,22 @@ api_services:
    - bar_api:
       type: dotnet_web_api
       name: MyBarApi
+      
+      database: 
+        provider: postgre_name
+        database_name: bar_api_db
+        context_name: BarApiContext
+        create_database: true
+      cache:
+        type: redis
+        redis_options: 
+          redis_server: my_redis
+          redis_instance_name: master
+      eventbus: 
+        bus_instance: rabbit_name
+      ports: [8000]
+      server: myNginxServer
+      logging: serilog
       authorization:
         issuer: myIdentityService
         secret: myIdentityService_bar_secret
@@ -145,7 +142,7 @@ api_services:
          - "bar_api_read"
          - "bar_api_write"
          - "bar_api_fullaccess"
-        user_claims:
+        user_claims: # claims that issued with jwt token
          - "sub"
          - "updated_at"
          - "iat"
@@ -168,21 +165,6 @@ api_services:
          - "picture"
          - "email_verified"
          - "email"
-      database: 
-        provider: postgre_name
-        database_name: bar_api_db
-        context_name: BarApiContext
-        create_database: true
-      cache:
-        type: redis
-        redis_options: 
-          redis_server: my_redis
-          redis_instance_name: master
-      eventbus: 
-        bus_instance: rabbit_name
-      ports: [8000]
-      server: myNginxServer
-      logging: serilog
 clients: 
    - web_1:
       type: web_angular_6

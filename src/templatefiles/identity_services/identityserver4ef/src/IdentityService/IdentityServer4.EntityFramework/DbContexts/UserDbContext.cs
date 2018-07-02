@@ -26,7 +26,6 @@ namespace IdentityServer4.EntityFramework.UserContext
         /// <summary>
         /// Save Changes Async  
         /// </summary>
-        /// <returns>0 if no change</returns>
         public Task<int> SaveChangesAsync()
         {
             return SaveChangesAsync();

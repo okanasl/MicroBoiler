@@ -1,5 +1,5 @@
 #!/usr/bin/bash
-cd src/Host
+cd Host
 dotnet ef database drop -c PersistedGrantDbContext
 dotnet ef database drop -c UserDbContext
-cd ../..
+cd ..

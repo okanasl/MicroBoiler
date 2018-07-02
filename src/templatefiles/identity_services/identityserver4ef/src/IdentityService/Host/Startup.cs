@@ -26,9 +26,10 @@ using IdentityServer4.EntityFramework.DbContexts;
 using IdentityServer4.Entities;
 using IdentityServer4.EntityFramework.UserContext;
 using IdentityServer4;
+//& region (eventbus)
 using MassTransit;
 using MassTransit.ExtensionsDependencyInjectionIntegration;
-
+//& end (eventbus)
 namespace Host
 {
     public class Startup
@@ -50,22 +51,22 @@ namespace Host
 //& region (database)
             const string userconnectionString = @"{{database:usersconnectionstring}}";
             const string connectionString = @"{{database:configconnectionstring}}";
-    //& region (mssql)
+    //& region (database:mssql)
             services.AddDbContext<UserDbContext>(options =>
                 options.UseSqlServer(userconnectionString)
                 );
-    //& endregion (mssql)
-    //& region (mysql)
+    //& end (database:mssql)
+    //& region (database:mysql)
             services.AddDbContext<UserDbContext>(options =>
                 options.UseMySql(userconnectionString)
                 );
-    //& endregion (mysql)
-    //& region (postgresql)
+    //& end (database:mysql)
+    //& region (database:postgresql)
             services.AddDbContext<UserDbContext>(options =>
                 options.UseNpgsql(userconnectionString)
                 );
-    //& endregion (postgresql)
-//& endregion (database)
+    //& end (database:postgresql)
+//& end (database)
             services.AddIdentity<ApplicationUser, ApplicationRole>()
                 .AddEntityFrameworkStores<UserDbContext>();
             
@@ -91,40 +92,40 @@ namespace Host
                     options.ResolveDbContextOptions = (provider, builder) =>
                     {
 //& region (database)
-    //& region (mssql)
+    //& region (database:mssql)
                         builder.UseSqlServer(connectionString,
                             sql => sql.MigrationsAssembly(migrationsAssembly));                    
-    //& endregion (mssql)
-    //& region (postgresql)
+    //& end (database:mssql)
+    //& region (database:postgresql)
                         builder.UseNpgsql(connectionString,
                             sql => sql.MigrationsAssembly(migrationsAssembly));                    
-    //& endregion (postgresql)
-    //& region (mysql)
+    //& end (database:postgresql)
+    //& region (database:mysql)
                         builder.UseMySql(connectionString,
                             sql => sql.MigrationsAssembly(migrationsAssembly));                    
-    //& endregion (mysql)
-//& endregion (database)
+    //& end (database:mysql)
+//& end (database)
                     };
                 })
                 // this adds the operational data from DB (codes, tokens, consents)
                 .AddOperationalStore(options =>
                 {
 //& region (database)
-    //& region (mssql)
+    //& region (database:mssql)
                     options.ConfigureDbContext = builder =>
                         builder.UseSqlServer(connectionString,
                             sql => sql.MigrationsAssembly(migrationsAssembly));
-    //& endregion (mssql)
-    //& region (postgresql)
+    //& end (database:mssql)
+    //& region (database:postgresql)
                     options.ConfigureDbContext = builder =>
                         builder.UseNpgsql(connectionString,
                             sql => sql.MigrationsAssembly(migrationsAssembly));
-    //& endregion (postgresql)
-    //& region (mysql)
+    //& end (database:postgresql)
+    //& region (database:mysql)
                     options.ConfigureDbContext = builder =>
                         builder.UseMySql(connectionString,
                             sql => sql.MigrationsAssembly(migrationsAssembly));
-    //& endregion (mysql)
+    //& end (database:mysql)
 //& region (database)
                     // this enables automatic token cleanup. this is optional.
                     options.EnableTokenCleanup = true;
@@ -141,7 +142,7 @@ namespace Host
             });
             services.AddSingleton(provider => Bus.Factory.CreateUsingRabbitMq(cfg =>
             {
-                var host = cfg.Host("localhost", "/", h => {
+                var host = cfg.Host("{{rabbitmq:host}}", "/", h => {
                     h.Username("{{rabbitmq:user:username}}");
                     h.Password("{{rabbitmq:user:password}}");
                 });
@@ -160,8 +161,8 @@ namespace Host
             services.AddSingleton<IBus>(provider => provider.GetRequiredService<IBusControl>());
             // Register with IHostedService To Start bus in Application Start
             services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService, BusService>();
-    //& endregion (eventbus:rabbitmq)
-//& endregion (eventbus)
+    //& end (eventbus:rabbitmq)
+//& end (eventbus)
             services.AddSingleton<LocService>();
             services.AddLocalization(options => options.ResourcesPath = "Resources");
             services.AddScoped<ClientIdFilter>();
@@ -215,16 +216,17 @@ namespace Host
             return services.BuildServiceProvider(validateScopes: false);
         }
 
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env
+        public void Configure(
+            IApplicationBuilder app, IHostingEnvironment env
 //& region (logging)
             ,ILoggerFactory loggerFactory
-//& endregion (logging)
+//& end (logging)
         )
         {
 //& region (logging)
             loggerFactory.AddConsole(_config.GetSection("Logging"));
             loggerFactory.AddDebug();
-//& endregion (logging)
+//& end (logging)
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();

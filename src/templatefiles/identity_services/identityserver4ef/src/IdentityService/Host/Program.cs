@@ -18,19 +18,19 @@ namespace Host
         public static void Main(string[] args)
         {
             Console.Title = "IdentityServer4.EntityFramework";
-//& region if (logging)
-    //& region if (logging:serilog)
+//& region (logging)
+    //& region (logging:serilog)
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Debug()
                 .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
                 .MinimumLevel.Override("System", LogEventLevel.Warning)
                 .MinimumLevel.Override("Microsoft.AspNetCore.Authentication", LogEventLevel.Information)
                 .Enrich.FromLogContext()
-                .WriteTo.File(@"identityserver4_log.txt")
+                .WriteTo.File(@"i_srv_log.txt")
                 .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level}] {SourceContext}{NewLine}{Message:lj}{NewLine}{Exception}{NewLine}", theme: AnsiConsoleTheme.Literate)
                 .CreateLogger();
-    //& endregion (logging:serilog)
-//& endregion (logging)
+    //& end (logging:serilog)
+//& end (logging)
             var seed = args.Contains("/seed");
             if (seed)
             {
@@ -52,15 +52,15 @@ namespace Host
             return WebHost.CreateDefaultBuilder(args)
                     .UseStartup<Startup>()
                     .UseKestrel()
-//& region if (logging)
-    //& region if (logging:serilog)
+//& region (logging)
+    //& region (logging:serilog)
                     .ConfigureLogging(builder =>
                     {
                         builder.ClearProviders();
                         builder.AddSerilog();
                     })
-    //& endregion (logging:serilog)
-//& endregion (logging)
+    //& end (logging:serilog)
+//& end (logging)
                     .Build();
         }
     }
