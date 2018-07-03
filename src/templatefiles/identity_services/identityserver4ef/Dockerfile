@@ -1,6 +1,6 @@
 #region (build_dev)
 FROM microsoft/dotnet:2.1-sdk-alpine AS build
-# Set the working directory witin the container
+# Set the working directory within the container
 WORKDIR /src
 
 # Copy all of the source files
@@ -18,7 +18,7 @@ RUN bash updatedb.sh
 
 # Publish application
 WORKDIR ..
-RUN dotnet publish ./Host/Host.csproj --output "../../dist"
+RUN dotnet publish ./IdentityService/Host/Host.csproj --output "../../dist"
 
 # Build runtime image
 FROM microsoft/dotnet:2.1-aspnetcore-runtime-alpine AS app
