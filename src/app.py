@@ -37,7 +37,7 @@ def filter_lines(file, start_delete_key, stop_delete_key):
                 # Discard all lines up to and including the stop marker
                 while stop_delete_key not in line:
                     line = next(lines)
-                line = next(lines)
+                line = next(lines)            
             yield line
     except StopIteration:
         return
@@ -57,9 +57,9 @@ def filter_sub_lines(
             line = next(lines)
             if start_delete_key_consist in line and start_delete_key_not_consist not in line:
                 # Discard all lines up to and including the stop marker
-                while stop_delete_key_consist not in line and stop_delete_key_not_consist in line:
+                while stop_delete_key_consist not in line and stop_delete_key_not_consist not in line:
                     line = next(lines)
-                line = next(lines)
+                line = next(lines)            
             yield line
     except StopIteration:
         return
@@ -94,7 +94,7 @@ def HandleCsprojLogging(logging_service, host_csproj_path):
             logging_type = 'microsoft'
     if(logging_enabled):
         with open(os.path.join(host_csproj_path), 'r+') as f:
-            filtered = list(filter_sub_lines(f, 'region (logging','region ('+logging_type,'end (logging','end ('+logging_type))
+            filtered = list(filter_sub_lines(f, 'region (logging','region (logging:'+logging_type,'end (logging','end (logging:'+logging_type))
             f.seek(0)
             f.writelines(filtered)
             f.truncate()
@@ -113,7 +113,7 @@ def HandleCsprojDatabase(service_options, host_csproj_path):
         database_instance = FindDatabaseWithName(service_options['database']['provider'])
         database_type = database_instance['type']
         with open(os.path.join(host_csproj_path), 'r+') as f:
-            filtered = list(filter_sub_lines(f, 'region (database','region ('+database_type,'end (database','end ('+database_type))
+            filtered = list(filter_sub_lines(f, 'region (database','region (database:'+database_type,'end (database','end (database:'+database_type))
             f.seek(0)
             f.writelines(filtered)
             f.truncate()
@@ -128,12 +128,11 @@ def HandleCsprojEventbus(service_options, host_csproj_path):
     
     if(eventbus_enabled):
         eventbus_instance = FindEventBusWithName(service_options['eventbus']['bus_instance'])
-        print ("ebus")
-        print (eventbus_instance)
+
         eventbus_implement_with = service_options['eventbus']['implement_with']
         eventbus_type = eventbus_instance['type']
         with open(os.path.join(host_csproj_path), 'r+') as f:
-            filtered = list(filter_sub_lines(f, 'region (eventbus','region ('+eventbus_implement_with,'end (eventbus','end ('+eventbus_implement_with))
+            filtered = list(filter_sub_lines(f, 'region (eventbus','region (eventbus:'+eventbus_implement_with,'end (eventbus','end (eventbus:'+eventbus_implement_with))
             f.seek(0)
             f.writelines(filtered)
             f.truncate()
@@ -144,6 +143,76 @@ def HandleCsprojEventbus(service_options, host_csproj_path):
                 f.writelines(filtered)
                 f.truncate()
 # end csproj helpers
+# start C# helpers
+def HandleCSharpLogging(logging_service, sharp_file_path):
+    logging_enabled = 'logging' in logging_service
+    if logging_enabled:
+        if 'type' not in logging_service['logging']:
+            logging_type = 'serilog'
+        else:
+            logging_type = 'microsoft'
+    if(logging_enabled):
+        with open(os.path.join(sharp_file_path), 'r+') as f:
+            filtered = list(filter_sub_lines(f, 'region (logging','region (logging:'+logging_type,'end (logging',logging_type))
+            f.seek(0)
+            f.writelines(filtered)
+            f.truncate()
+    else:
+        logging_type_start_line = 'region (logging)'
+        logging_type_end_line = 'end (logging)'
+        with open(os.path.join(sharp_file_path), 'r+') as f:
+                filtered = list(filter_lines(f, logging_type_start_line, logging_type_end_line))
+                f.seek(0)
+                f.writelines(filtered)
+                f.truncate()
+def HandleCSharpDatabase(service_options, sharp_file_path):
+    database_enabled = 'database' in service_options
+    
+    if(database_enabled):
+        database_instance = FindDatabaseWithName(service_options['database']['provider'])
+        database_type = database_instance['type']
+        with open(os.path.join(sharp_file_path), 'r+') as f:
+            filtered = list(filter_sub_lines(f, 'region (database',database_type,'end (database',database_type))
+            f.seek(0)
+            f.writelines(filtered)
+            f.truncate()
+    else:
+        with open(os.path.join(sharp_file_path), 'r+') as f:
+                filtered = list(filter_lines(f, 'region (database)', 'end (database)'))
+                f.seek(0)
+                f.writelines(filtered)
+                f.truncate()
+def HandleCSharpEventbus(service_options, sharp_file_path):
+    eventbus_enabled = 'eventbus' in service_options
+    
+    if(eventbus_enabled):
+        eb_replace_dict = {}
+        
+        eventbus_instance = FindEventBusWithName(service_options['eventbus']['bus_instance'])
+
+        if eventbus_instance['type'] == 'rabbitmq':
+            eb_replace_dict['{{rabbitmq:host}}'] = eventbus_instance['name']
+            eb_replace_dict['{{rabbitmq:user:username}}'] = 'doom'
+            eb_replace_dict['{{rabbitmq:user:password}}'] = 'machine'
+            if 'docker_compose_set' in eventbus_instance:
+                if 'envoronment' in eventbus_instance['docker_compose_set']:
+                    eb_replace_dict['{{rabbitmq:user:username}}'] = eventbus_instance['docker_compose_set']['environment']['RABBITMQ_DEFAULT_USER']
+                    eb_replace_dict['{{rabbitmq:user:password}}'] = eventbus_instance['docker_compose_set']['environment']['RABBITMQ_DEFAULT_PASSWORD']
+        replace_tamplate_file(sharp_file_path,eb_replace_dict)
+        eventbus_implement_with = service_options['eventbus']['implement_with']
+        eventbus_type = eventbus_instance['type']
+        with open(os.path.join(sharp_file_path), 'r+') as f:
+            filtered = list(filter_sub_lines(f, 'region (eventbus',eventbus_implement_with,'end (eventbus',eventbus_implement_with))
+            f.seek(0)
+            f.writelines(filtered)
+            f.truncate()
+    else:
+        with open(os.path.join(sharp_file_path), 'r+') as f:
+                filtered = list(filter_lines(f, 'region (eventbus)', 'end (eventbus)'))
+                f.seek(0)
+                f.writelines(filtered)
+                f.truncate()
+# end C# helpers
 # global
 projectOptions = {}
 rememberize = {}
@@ -663,13 +732,7 @@ def HanldeIs4Csproj(is4_options,is4_folder):
     HandleCsprojLogging(is4_options,host_csproj_path)
     HandleCsprojDatabase(is4_options,host_csproj_path)
     HandleCsprojEventbus(is4_options,host_csproj_path)
-def HanldeIs4StartupFile(is4_options,is4_folder):
-    print ('Configuring Identity Server 4 csproj')
-    host_startup_path = os.path.join(is4_folder,
-        'src',
-        'IdentityService',
-        'Host',
-        'Startup.cs')
+
 def BuildConnStringForIs4(identity_options):
     database_instance_name = identity_options['database']['provider']
     database_instance = FindDatabaseWithName(database_instance_name)
@@ -730,6 +793,17 @@ def HandleEventBusForIs4(i_srv, is4_copy_folder):
         repleceDict['{{rabbitmq:user:username}}'] = 'doom'
         repleceDict['{{rabbitmq:user:password}}'] = 'machine'
     replace_tamplate_file(startup_file_path, repleceDict)
+
+def HandleDockerFileForIs4(identity_service, is4_copy_folder):
+    docker_file_path = os.path.join(is4_copy_folder,'Dockerfile')
+    docker_replace_dict = {}
+    docker_replace_dict['{{port}}'] = str(identity_service['ports'][0])
+    replace_tamplate_file(docker_file_path,docker_replace_dict)
+def HandleStartupForIs4(identity_service, is4_copy_folder):
+    startup_file_path = os.path.join(is4_copy_folder,'src','IdentityService','Host','Startup.cs')
+    HandleCSharpEventbus(identity_service,startup_file_path)
+    HandleCSharpDatabase(identity_service,startup_file_path)
+    HandleCSharpLogging(identity_service,startup_file_path)
 def HandleIdentityServer4(identity_service):
     print('Moving Template Files...')
     is4_template_folder = os.path.join(identityServicesPath,'identityserver4ef')
@@ -745,6 +819,10 @@ def HandleIdentityServer4(identity_service):
     HandleConnectionStringForIs4(identity_service ,is4_copy_folder)
     if 'eventbus' in identity_service:
         HandleEventBusForIs4(identity_service, is4_copy_folder)
+    HandleDockerFileForIs4(identity_service, is4_copy_folder)
+    HandleStartupForIs4(identity_service, is4_copy_folder)
+
+    
 def HandleIdentityServices(identity_services):
     print ('Scaffolding Identity Services...')
     for i_service in identity_services:
