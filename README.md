@@ -1,6 +1,6 @@
 # MicroBoiler
 A microservice architecture generator.
-## Templates
+## Currently supported goods
 - [x] IdentityServer4 Template
 - [x] Nginx Server
 - [x] RabbitMq
