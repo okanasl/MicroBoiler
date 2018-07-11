@@ -1,8 +1,10 @@
 # MicroBoiler
 A microservice architecture generator.
 ## Current Status
-- [x] .Net Core 2.1 WebApi
+- [x] .Net Core Microservice
+- [x] NodeJs Microservice
 - [x] IdentityServer4 Template / Configuration
+- [ ] Keycloak / Configuration
 - [x] Nginx Server / Configuration
 - [x] RabbitMq
 - [x] Redis / Configuration
