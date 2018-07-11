@@ -51,21 +51,21 @@ namespace Host
 //& region (database)
             const string userconnectionString = @"{{database:usersconnectionstring}}";
             const string connectionString = @"{{database:configconnectionstring}}";
-    //& region (database:mssql)
+//& region (database:mssql)
             services.AddDbContext<UserDbContext>(options =>
                 options.UseSqlServer(userconnectionString)
                 );
-    //& end (database:mssql)
-    //& region (database:mysql)
+//& end (database:mssql)
+//& region (database:mysql)
             services.AddDbContext<UserDbContext>(options =>
                 options.UseMySql(userconnectionString)
                 );
-    //& end (database:mysql)
-    //& region (database:postgresql)
+//& end (database:mysql)
+//& region (database:postgresql)
             services.AddDbContext<UserDbContext>(options =>
                 options.UseNpgsql(userconnectionString)
                 );
-    //& end (database:postgresql)
+//& end (database:postgresql)
 //& end (database)
             services.AddIdentity<ApplicationUser, ApplicationRole>()
                 .AddEntityFrameworkStores<UserDbContext>();
@@ -92,18 +92,18 @@ namespace Host
                     options.ResolveDbContextOptions = (provider, builder) =>
                     {
 //& region (database)
-    //& region (database:mssql)
+//& region (database:mssql)
                         builder.UseSqlServer(connectionString,
                             sql => sql.MigrationsAssembly(migrationsAssembly));                    
-    //& end (database:mssql)
-    //& region (database:postgresql)
+//& end (database:mssql)
+//& region (database:postgresql)
                         builder.UseNpgsql(connectionString,
                             sql => sql.MigrationsAssembly(migrationsAssembly));                    
-    //& end (database:postgresql)
-    //& region (database:mysql)
+//& end (database:postgresql)
+//& region (database:mysql)
                         builder.UseMySql(connectionString,
                             sql => sql.MigrationsAssembly(migrationsAssembly));                    
-    //& end (database:mysql)
+//& end (database:mysql)
 //& end (database)
                     };
                 })
@@ -136,7 +136,7 @@ namespace Host
 
 
 //& region (eventbus)
-    //& region (eventbus:rabbitmq)
+//& region (eventbus:rabbitmq)
             services.AddMassTransit(p=>{
                 // p.AddConsumer<SomeEventHappenedConsumer>();
             });
@@ -161,7 +161,7 @@ namespace Host
             services.AddSingleton<IBus>(provider => provider.GetRequiredService<IBusControl>());
             // Register with IHostedService To Start bus in Application Start
             services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService, BusService>();
-    //& end (eventbus:rabbitmq)
+//& end (eventbus:rabbitmq)
 //& end (eventbus)
             services.AddSingleton<LocService>();
             services.AddLocalization(options => options.ResourcesPath = "Resources");

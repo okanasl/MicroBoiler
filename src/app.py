@@ -43,21 +43,31 @@ def filter_lines(file, start_delete_key, stop_delete_key):
         return
 def filter_sub_lines(
     file,
-    start_delete_key_consist,
-    start_delete_key_not_consist,
-    stop_delete_key_consist,
-    stop_delete_key_not_consist):
-    """
-    Given a file handle, generate all lines except those between the specified
-    text markers.
-    """
+    parent_marker,
+    child_marker):
+    filtered = []
     lines = iter(file)
+    parent_marker_start = 'region ('+parent_marker+')'
+    child_marker_start = 'region ('+parent_marker+':'+child_marker+')'
+    parent_marker_end = 'end ('+parent_marker+')'
+    child_marker_end = 'end ('+parent_marker+':'+child_marker+')'
+    print (parent_marker_start)
+    print(parent_marker_end)
+    print (child_marker_start)
+    print (child_marker_end)
     try:
         while True:
             line = next(lines)
-            if start_delete_key_consist in line and start_delete_key_not_consist not in line:
+            if parent_marker_start in line:
                 # Discard all lines up to and including the stop marker
-                while stop_delete_key_consist not in line and stop_delete_key_not_consist not in line:
+                line = next(lines)
+                if child_marker_start in line:
+                    print ("Found")
+                    while child_marker_end not in line:
+                        line = next(lines)
+                        print (line)
+                        yield line
+                while parent_marker_end not in line:
                     line = next(lines)
                 line = next(lines)            
             yield line
@@ -94,7 +104,7 @@ def HandleCsprojLogging(logging_service, host_csproj_path):
             logging_type = 'microsoft'
     if(logging_enabled):
         with open(os.path.join(host_csproj_path), 'r+') as f:
-            filtered = list(filter_sub_lines(f, 'region (logging','region (logging:'+logging_type,'end (logging','end (logging:'+logging_type))
+            filtered = list(filter_sub_lines(f, 'logging',logging_type))
             f.seek(0)
             f.writelines(filtered)
             f.truncate()
@@ -113,7 +123,7 @@ def HandleCsprojDatabase(service_options, host_csproj_path):
         database_instance = FindDatabaseWithName(service_options['database']['provider'])
         database_type = database_instance['type']
         with open(os.path.join(host_csproj_path), 'r+') as f:
-            filtered = list(filter_sub_lines(f, 'region (database','region (database:'+database_type,'end (database','end (database:'+database_type))
+            filtered = list(filter_sub_lines(f, 'database',database_type))
             f.seek(0)
             f.writelines(filtered)
             f.truncate()
@@ -132,7 +142,7 @@ def HandleCsprojEventbus(service_options, host_csproj_path):
         eventbus_implement_with = service_options['eventbus']['implement_with']
         eventbus_type = eventbus_instance['type']
         with open(os.path.join(host_csproj_path), 'r+') as f:
-            filtered = list(filter_sub_lines(f, 'region (eventbus','region (eventbus:'+eventbus_implement_with,'end (eventbus','end (eventbus:'+eventbus_implement_with))
+            filtered = list(filter_sub_lines(f, 'eventbus',eventbus_type))
             f.seek(0)
             f.writelines(filtered)
             f.truncate()
@@ -153,7 +163,7 @@ def HandleCSharpLogging(logging_service, sharp_file_path):
             logging_type = 'microsoft'
     if(logging_enabled):
         with open(os.path.join(sharp_file_path), 'r+') as f:
-            filtered = list(filter_sub_lines(f, 'region (logging','region (logging:'+logging_type,'end (logging',logging_type))
+            filtered = list(filter_sub_lines(f,'logging',logging_type))
             f.seek(0)
             f.writelines(filtered)
             f.truncate()
@@ -172,7 +182,7 @@ def HandleCSharpDatabase(service_options, sharp_file_path):
         database_instance = FindDatabaseWithName(service_options['database']['provider'])
         database_type = database_instance['type']
         with open(os.path.join(sharp_file_path), 'r+') as f:
-            filtered = list(filter_sub_lines(f, 'region (database',database_type,'end (database',database_type))
+            filtered = list(filter_sub_lines(f, 'database',database_type))
             f.seek(0)
             f.writelines(filtered)
             f.truncate()
@@ -202,7 +212,7 @@ def HandleCSharpEventbus(service_options, sharp_file_path):
         eventbus_implement_with = service_options['eventbus']['implement_with']
         eventbus_type = eventbus_instance['type']
         with open(os.path.join(sharp_file_path), 'r+') as f:
-            filtered = list(filter_sub_lines(f, 'region (eventbus',eventbus_implement_with,'end (eventbus',eventbus_implement_with))
+            filtered = list(filter_sub_lines(f, 'eventbus',eventbus_type))
             f.seek(0)
             f.writelines(filtered)
             f.truncate()
