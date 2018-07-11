@@ -12,4 +12,5 @@ A microservice architecture generator.
 - [ ] ReactJs Client
 - [ ] React Native Client
 - [ ] Angular Client
+- [ ] Ionic 3 Client
 - [ ] VueJs Client
