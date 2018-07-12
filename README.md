@@ -3,7 +3,7 @@ A microservice architecture generator.
 ## Current Status
 ### Services
 - [x] .Net Core Microservice
-- [x] NodeJs Microservice
+- [ ] NodeJs Microservice
 ### Identity
 - [x] IdentityServer4 Template / Configuration
 - [ ] Keycloak / Configuration
@@ -17,10 +17,10 @@ A microservice architecture generator.
 - [x] Redis / Configuration
 - [x] Postgresql
 - [x] Mysql
-- [x] Mssql
+- [ ] Mssql
 - [ ] MongoDB
 ### Web/Mobile Clients
-- [ ] ReactJs Client
+- [ ] React Web Client
 - [ ] React Native Client
 - [ ] Angular Client
 - [ ] Ionic 3 Client

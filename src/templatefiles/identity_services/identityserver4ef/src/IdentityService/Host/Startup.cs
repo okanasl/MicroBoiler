@@ -115,17 +115,17 @@ namespace Host
                     options.ConfigureDbContext = builder =>
                         builder.UseSqlServer(connectionString,
                             sql => sql.MigrationsAssembly(migrationsAssembly));
-    //& end (database:mssql)
-    //& region (database:postgresql)
+//& end (database:mssql)
+//& region (database:postgresql)
                     options.ConfigureDbContext = builder =>
                         builder.UseNpgsql(connectionString,
                             sql => sql.MigrationsAssembly(migrationsAssembly));
-    //& end (database:postgresql)
-    //& region (database:mysql)
+//& end (database:postgresql)
+//& region (database:mysql)
                     options.ConfigureDbContext = builder =>
                         builder.UseMySql(connectionString,
                             sql => sql.MigrationsAssembly(migrationsAssembly));
-    //& end (database:mysql)
+//& end (database:mysql)
 //& region (database)
                     // this enables automatic token cleanup. this is optional.
                     options.EnableTokenCleanup = true;
