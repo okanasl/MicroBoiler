@@ -92,10 +92,6 @@ namespace Host
                     options.ResolveDbContextOptions = (provider, builder) =>
                     {
 //& region (database)
-//& region (database:mssql)
-                        builder.UseSqlServer(connectionString,
-                            sql => sql.MigrationsAssembly(migrationsAssembly));                    
-//& end (database:mssql)
 //& region (database:postgresql)
                         builder.UseNpgsql(connectionString,
                             sql => sql.MigrationsAssembly(migrationsAssembly));                    
@@ -104,25 +100,27 @@ namespace Host
                         builder.UseMySql(connectionString,
                             sql => sql.MigrationsAssembly(migrationsAssembly));                    
 //& end (database:mysql)
+//& region (database:mssql)
+                        builder.UseSqlServer(connectionString,
+                            sql => sql.MigrationsAssembly(migrationsAssembly));                    
+//& end (database:mssql)
 //& end (database)
                     };
                 })
                 // this adds the operational data from DB (codes, tokens, consents)
                 .AddOperationalStore(options =>
                 {
+                    options.ConfigureDbContext = builder =>
 //& region (database)
     //& region (database:mssql)
-                    options.ConfigureDbContext = builder =>
                         builder.UseSqlServer(connectionString,
                             sql => sql.MigrationsAssembly(migrationsAssembly));
 //& end (database:mssql)
 //& region (database:postgresql)
-                    options.ConfigureDbContext = builder =>
                         builder.UseNpgsql(connectionString,
                             sql => sql.MigrationsAssembly(migrationsAssembly));
 //& end (database:postgresql)
 //& region (database:mysql)
-                    options.ConfigureDbContext = builder =>
                         builder.UseMySql(connectionString,
                             sql => sql.MigrationsAssembly(migrationsAssembly));
 //& end (database:mysql)

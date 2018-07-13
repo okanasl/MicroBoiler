@@ -27,7 +27,7 @@ def replace_tamplate_file(filepath,replace_dict):
 def filter_region(file, start_delete_key, stop_delete_key):
     """
     Given a file handle, generate all lines except those between the specified
-    text markers.
+    regions.
     """
     lines = iter(file)
     try:
@@ -49,16 +49,26 @@ def filter_sub_region(
     parent_marker_start = 'region ('+parent_marker+':'
     child_marker_start = 'region ('+parent_marker+':'+child_marker
     child_marker_end = 'end ('+parent_marker+':'+child_marker      
-    print (parent_marker_start)
-    print (child_marker_start) 
-    print (child_marker_end)
+    parent_marker_end = 'end ('+parent_marker+':'
     try:
         while True:
             line = next(lines)
-            if parent_marker_start in line and child_marker_start not in line:
-                while child_marker_end not in line:
+            if parent_marker_start in line and child_marker not in line:
+                while parent_marker_end not in line:
                     line = next(lines)
-                line = next(lines)    
+            yield line
+    except StopIteration:
+        return
+def Clear_File_Region_Marks(file):
+    lines = iter(file)
+    region_marks = ['&// region','<!-- region','&// end','<!-- end']
+    lines = iter(file)
+    try:
+        while True:
+            line = next(lines)
+            for mark in region_marks:
+                if mark in line:
+                    line = next(lines)         
             yield line
     except StopIteration:
         return
@@ -732,6 +742,10 @@ def HanldeIs4Csproj(is4_options,is4_folder):
     HandleCsprojDatabase(is4_options,host_csproj_path)
     HandleCsprojEventbus(is4_options,host_csproj_path)
 
+    HandleCsprojLogging(is4_options,host_eflib_csproj_path)
+    HandleCsprojDatabase(is4_options,host_eflib_csproj_path)
+    HandleCsprojEventbus(is4_options,host_eflib_csproj_path)
+
 def BuildConnStringForIs4(identity_options):
     database_instance_name = identity_options['database']['provider']
     database_instance = FindDatabaseWithName(database_instance_name)
@@ -803,8 +817,8 @@ def HandleStartupForIs4(identity_service, is4_copy_folder):
     HandleCSharpEventbus(identity_service,startup_file_path)
     HandleCSharpDatabase(identity_service,startup_file_path)
     HandleCSharpLogging(identity_service,startup_file_path)
+    
 def HandleIdentityServer4(identity_service):
-    print('Moving Template Files...')
     is4_template_folder = os.path.join(identityServicesPath,'identityserver4ef')
     is4_copy_folder = os.path.join(srcDir,'IdentityServices',identity_service['name'])
     copy_tree(is4_template_folder,is4_copy_folder)
@@ -859,7 +873,7 @@ while True:
                 if('eventbus' in projectOptions):
                     HandleEventBus(projectOptions['eventbus'])
 
-                # Create and configure identity_services(SSO)
+                # Create and configure identity_services
                 if('identity_services' in projectOptions):
                     HandleIdentityServices(projectOptions['identity_services'])
                 docker_compose_path = os.path.join(projectDir,'docker-compose.yml')
