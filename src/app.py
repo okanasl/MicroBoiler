@@ -2,6 +2,7 @@
 
 import readline
 import fileinput
+import re
 import shlex
 from distutils.dir_util import copy_tree
 import shutil
@@ -16,6 +17,9 @@ database_types = ['postgresql','mysql','mssql']
 # helpers
 def InDbQ(value):
     return '\"'+value+'\"'
+def to_camelcase(s):
+    s_val = re.sub(r'(?!^)_([a-zA-Z])', lambda m: m.group(1).upper(), s)
+    return s_val[0].upper()+s_val[1:]
 def replace_tamplate_file(filepath,replace_dict):
     with open(filepath,'r') as cs_file:
         cs_content = cs_file.read()
@@ -33,7 +37,7 @@ def filter_region(file, start_delete_key, stop_delete_key):
     try:
         while True:
             line = next(lines)
-            if start_delete_key in line:
+            if start_delete_key in line and ':all' not in line:
                 # Discard all lines up to and including the stop marker
                 while stop_delete_key not in line:
                     line = next(lines)
@@ -53,7 +57,7 @@ def filter_sub_region(
     try:
         while True:
             line = next(lines)
-            if parent_marker_start in line and child_marker not in line:
+            if parent_marker_start in line and child_marker not in line and ':all' not in line:
                 while parent_marker_end not in line:
                     line = next(lines)
             yield line
@@ -92,6 +96,11 @@ def FindEventBusWithName(name):
     for bus in eventbus_instances:
         if list(bus.values())[0]['name'] == name:
             return list(bus.values())[0]
+def FindServerWithName(name):
+    server_instances = projectOptions['servers']
+    for server in server_instances:
+        if list(server.values())[0]['name'] == name:
+            return list(server.values())[0] 
 # end service helpers
 # start .csproj helpers
 def HandleCsprojLogging(logging_service, host_csproj_path):
@@ -138,7 +147,6 @@ def HandleCsprojEventbus(service_options, host_csproj_path):
     if(eventbus_enabled):
         eventbus_instance = FindEventBusWithName(service_options['eventbus']['bus_instance'])
 
-        eventbus_implement_with = service_options['eventbus']['implement_with']
         eventbus_type = eventbus_instance['type']
         with open(os.path.join(host_csproj_path), 'r+') as f:
             filtered = list(filter_sub_region(f, 'eventbus',eventbus_type))
@@ -191,6 +199,24 @@ def HandleCSharpDatabase(service_options, sharp_file_path):
                 f.seek(0)
                 f.writelines(filtered)
                 f.truncate()
+def HandleCSharpServer(service_options,sharp_file_path):
+    server_enabled = 'server' in service_options
+    if(server_enabled):
+        server_instance = FindServerWithName(service_options['server']['provider'])
+        print (server_instance)
+        server_type = server_instance['type']
+        with open(os.path.join(sharp_file_path), 'r+') as f:
+            filtered = list(filter_sub_region(f, 'server',server_type))
+            f.seek(0)
+            f.writelines(filtered)
+            f.truncate()
+    else:
+        with open(os.path.join(sharp_file_path), 'r+') as f:
+                filtered = list(filter_region(f, 'region (server)', 'end (server)'))
+                f.seek(0)
+                f.writelines(filtered)
+                f.truncate()
+
 def HandleCSharpEventbus(service_options, sharp_file_path):
     eventbus_enabled = 'eventbus' in service_options
     
@@ -208,7 +234,6 @@ def HandleCSharpEventbus(service_options, sharp_file_path):
                     eb_replace_dict['{{rabbitmq:user:username}}'] = eventbus_instance['docker_compose_set']['environment']['RABBITMQ_DEFAULT_USER']
                     eb_replace_dict['{{rabbitmq:user:password}}'] = eventbus_instance['docker_compose_set']['environment']['RABBITMQ_DEFAULT_PASSWORD']
         replace_tamplate_file(sharp_file_path,eb_replace_dict)
-        eventbus_implement_with = service_options['eventbus']['implement_with']
         eventbus_type = eventbus_instance['type']
         with open(os.path.join(sharp_file_path), 'r+') as f:
             filtered = list(filter_sub_region(f, 'eventbus',eventbus_type))
@@ -814,10 +839,13 @@ def HandleDockerFileForIs4(identity_service, is4_copy_folder):
     replace_tamplate_file(docker_file_path,docker_replace_dict)
 def HandleStartupForIs4(identity_service, is4_copy_folder):
     startup_file_path = os.path.join(is4_copy_folder,'src','IdentityService','Host','Startup.cs')
+    program_file_path = os.path.join(is4_copy_folder,'src','IdentityService','Host','Program.cs')
     HandleCSharpEventbus(identity_service,startup_file_path)
     HandleCSharpDatabase(identity_service,startup_file_path)
     HandleCSharpLogging(identity_service,startup_file_path)
-    
+    HandleCSharpServer(identity_service,startup_file_path)
+
+    HandleCSharpLogging(identity_service,program_file_path)
 def HandleIdentityServer4(identity_service):
     is4_template_folder = os.path.join(identityServicesPath,'identityserver4ef')
     is4_copy_folder = os.path.join(srcDir,'IdentityServices',identity_service['name'])
@@ -842,7 +870,93 @@ def HandleIdentityServices(identity_services):
         i_service_options = list(i_service.values())[0]
         if (i_service_options['type']=='identityserver4'):
             HandleIdentityServer4(i_service_options)
+def HandleDotnetApiCsproj(dotnet_service, api_copy_folder):
+    print ('Handle DotnetApi Csproj File')
+    api_csproj_path = os.path.join(api_copy_folder,
+        'src',
+        to_camelcase(dotnet_service['name'])+'.csproj')
+    # Handle Host Application
+    HandleCsprojLogging(dotnet_service,api_csproj_path)
+    HandleCsprojDatabase(dotnet_service,api_csproj_path)
+    HandleCsprojEventbus(dotnet_service,api_csproj_path)
+def HandleDotnetApiStartup(dotnet_service, api_copy_folder):
+    print ('Handle DotnetApi Startup.cs File')
+    api_startup_path = os.path.join(api_copy_folder,
+    'src',
+    'Startup.cs')
     
+    HandleCSharpDatabase(dotnet_service,api_startup_path)
+    HandleCSharpEventbus(dotnet_service,api_startup_path)
+    HandleCSharpLogging(dotnet_service,api_startup_path)
+    HandleCSharpServer(dotnet_service,api_startup_path)
+    # Set DBContext Name
+    CamelCaseName = to_camelcase(dotnet_service['name'])
+    replaceDict = {
+        'NameContext': CamelCaseName + 'Context'
+    }
+    replace_tamplate_file(api_startup_path,replaceDict)
+
+def HandleDotnetApiProgramFile(dotnet_service, api_copy_folder):
+    api_program_path = os.path.join(api_copy_folder,
+    'src',
+    'Program.cs')
+
+    HandleCSharpLogging(dotnet_service,api_program_path)
+def HandleDotnetApiDbContext(dotnet_service, api_copy_folder):
+    dbcontext_path = os.path.join(api_copy_folder,
+    'src',
+    'Data',
+    'NameContext.cs')
+    CamelCaseDbName = to_camelcase(dotnet_service['name']) + 'Context'
+    if 'database' in dotnet_service:
+        if os.path.exists(dbcontext_path):
+            dbcontext_rename_path = os.path.join(api_copy_folder,
+                'src',
+                'Data',
+                CamelCaseDbName+'.cs')
+            shutil.copy(dbcontext_path, dbcontext_rename_path)
+            os.remove(dbcontext_path)
+            replaceDict = {
+                'NameContext': CamelCaseDbName
+            }
+            replace_tamplate_file(dbcontext_rename_path,replaceDict)
+    else:
+        remove_data_folder_path = os.path.join(api_copy_folder,
+            'src',
+            'Data')
+        os.remove(remove_data_folder_path)
+def HandleDotnetApiService(api_service_options):
+    CamelCaseName = to_camelcase(api_service_options['name'])
+    api_template_folder = os.path.join(apiServicesPath,'dotnet_web_api','src')
+    api_copy_folder = os.path.join(srcDir,'ApiServices',CamelCaseName )
+    copy_tree(api_template_folder,api_copy_folder)
+    
+    api_src_folder = os.path.join(srcDir,'ApiServices',CamelCaseName,'DotnetWebApi')
+    api_src_rename_folder = os.path.join(srcDir,'ApiServices',CamelCaseName,'src')
+    api_csproj_folder = os.path.join(srcDir,'ApiServices',CamelCaseName,'src','DotnetWebApi.csproj')
+    api_csproj_rename_folder = os.path.join(srcDir,'ApiServices',CamelCaseName,'src',CamelCaseName+'.csproj')
+    if not os.path.exists(api_src_rename_folder):
+        shutil.copytree(api_src_folder,api_src_rename_folder)
+        shutil.rmtree( api_src_folder,ignore_errors=True)
+    if not os.path.exists(api_csproj_rename_folder):
+        shutil.copy(api_csproj_folder,api_csproj_rename_folder)
+        os.remove( api_csproj_folder)
+
+
+    HandleDotnetApiCsproj(api_service_options,api_copy_folder)
+    HandleDotnetApiStartup(api_service_options,api_copy_folder)
+    HandleDotnetApiProgramFile(api_service_options,api_copy_folder)
+    HandleDotnetApiDbContext(api_service_options,api_copy_folder)
+    #HandleDotnetApiDataFolder(api_service_options,api_copy_folder)
+    #HandleDotnetApiProgramCs(api_service_options,api_copy_folder)
+    #HandleDotnetApiCleaning(api_service_options,api_copy_folder)
+
+def HandleApiServices(api_services):
+    print ('Scaffolding Api Services')
+    for api_service in api_services:
+        api_service_options = list(api_service.values())[0]
+        if(api_service_options['type']=='dotnet_web_api'):
+            HandleDotnetApiService(api_service_options)
 
 print('Enter a command')
 print('To get help, enter `help`.')
@@ -876,6 +990,10 @@ while True:
                 # Create and configure identity_services
                 if('identity_services' in projectOptions):
                     HandleIdentityServices(projectOptions['identity_services'])
+
+                # Create and configure api_serviecs
+                if('api_services' in projectOptions):
+                    HandleApiServices(projectOptions['api_services'])
                 docker_compose_path = os.path.join(projectDir,'docker-compose.yml')
                 with open(docker_compose_path, 'w') as yaml_file:
                     yaml.dump(dockerOptions, yaml_file, default_flow_style=False)
@@ -888,7 +1006,7 @@ while True:
         break
 
     elif cmd=='help':
-        print('See Github Documentation')
+        print('See Github Documentation :))')
 
     else:
         print('Unknown command: {}'.format(cmd))

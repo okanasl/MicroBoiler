@@ -52,21 +52,21 @@ namespace DotnetWebApi
             
 //& region (database)
             string connectionString = "@{{database:connectionString}}";
-    //& region (mssql)
+    //& region (database:mssql)
             services.AddDbContext<NameContext>(options =>
                 options.UseSqlServer(connectionString)
                 );
-    //& end (mssql)
-    //& region (mysql)
+    //& end (database:mssql)
+    //& region (database:mysql)
             services.AddDbContext<NameContext>(options =>
                 options.UseMySql(connectionString)
                 );
-    //& end (mysql)
-    //& region (postgresql)
+    //& end (database:mysql)
+    //& region (database:postgresql)
             services.AddDbContext<NameContext>(options =>
                 options.UseNpgsql(connectionString)
                 );
-    //& end (postgresql)
+    //& end (database:postgresql)
 //& end (database)
 //& region (cache)
     //& region (cache:redis)

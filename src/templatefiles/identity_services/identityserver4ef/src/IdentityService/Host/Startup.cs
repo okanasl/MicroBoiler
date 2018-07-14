@@ -30,6 +30,11 @@ using IdentityServer4;
 using MassTransit;
 using MassTransit.ExtensionsDependencyInjectionIntegration;
 //& end (eventbus)
+
+//& region (server)
+using Microsoft.AspNetCore.HttpOverrides;
+//& end (server)
+
 namespace Host
 {
     public class Startup
@@ -235,7 +240,12 @@ namespace Host
                 
                 app.UseExceptionHandler("/Home/Error");
             }
-
+//& region (server)
+            app.UseForwardedHeaders(new ForwardedHeadersOptions
+            {
+                ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+            });
+//& end (server)
             var locOptions = app.ApplicationServices.GetService<IOptions<RequestLocalizationOptions>>();
             app.UseRequestLocalization(locOptions.Value);
 

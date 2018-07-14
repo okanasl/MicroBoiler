@@ -82,9 +82,9 @@ identity_services:
       name: myIdentityService
       eventbus: 
         bus_instance: rabbit_name
-        implement_with: masstransit
       ports: [5000]
-      server: myNginxServer
+      server: 
+        provider: myNginxServer
       logging: serilog
       user_auth: aspnet_identity # only option
       database: # required
@@ -95,7 +95,6 @@ api_services:
       name: myFooApi
       eventbus: # optional
         bus_instance: rabbit_name # required
-        implement_implement_with: masstransit # default
       authorization: # optional
         issuer: myIdentityService # required
         api_secret: myIdentityService_secret # optional
@@ -111,7 +110,8 @@ api_services:
       cache: # optional
         type: memory # required
       ports: [7000] # optional (random if not set)
-      server: myNginxServer # optional
+      server: 
+        provider: myNginxServer # optional
       logging: serilog
    - bar_api:
       type: dotnet_web_api
@@ -130,7 +130,8 @@ api_services:
       eventbus: 
         bus_instance: rabbit_name
       ports: [8000]
-      server: myNginxServer
+      server: 
+        provider: myNginxServer 
       logging: serilog
       authorization:
         issuer: myIdentityService
@@ -181,7 +182,8 @@ clients:
          - foo_api_fullaccess
          - bar_api_readonly
       ports: [4200]
-      server: myNginxServer
+      server: 
+        provider: myNginxServer # optional
    - web_2:
       type: web_react_16
       name: myReactClient
@@ -194,6 +196,7 @@ clients:
          - foo_api_fullaccess
          - bar_api_readonly
       ports: [4100]
-      server: myNginxServer
+      server: 
+        provider: myNginxServer # optional
 
       
