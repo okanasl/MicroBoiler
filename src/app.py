@@ -311,6 +311,7 @@ def AddNginxToDockerOptions(server,api_services, clients,identity_services):
     dockerOptions['services'].append(nginx_docker_obj)
 
 def BuildNginxConfiguration(server, api_services,clients, identity_services):
+    print ("Configuring Nginx Server")
     serverConfig = server['config']
     config = nginx.Conf()
     # Add Root Configurations
@@ -334,7 +335,6 @@ def BuildNginxConfiguration(server, api_services,clients, identity_services):
             nginx.Key('listen', '80'),
             nginx.Key('server_name', str.lower(api_service['name'])+'.localhost'),
         )
-        #pylint: disable-msg=E1121
         proxy_pass = 'http://'+str.lower(api_service['name'])+':'+':'.join(map(str,(api_service['ports'])))+'/'
         location = nginx.Location(
             '/',
@@ -387,6 +387,7 @@ def BuildNginxConfiguration(server, api_services,clients, identity_services):
         nginxServer.add(location)
         httpConf.add(nginxServer)
     config.add(httpConf)
+    print (httpConf)
     return config
     
 
@@ -608,7 +609,6 @@ def HandleIs4ClientConfiguration(clients, identity_service, is4_copy_folder):
     clients_txt_template_file = os.path.join(
         is4_copy_folder,
         'src',
-        'IdentityService',
         'Host',
         'Configuration',
         'client.config.txt'
@@ -616,7 +616,6 @@ def HandleIs4ClientConfiguration(clients, identity_service, is4_copy_folder):
     clients_cs_template_file = os.path.join(
         is4_copy_folder,
         'src',
-        'IdentityService',
         'Host',
         'Configuration',
         'Clients.cs'
@@ -683,7 +682,6 @@ def HandleIs4ResourcesConfiguration(resources, identity_service, is4_copy_folder
     resources_txt_template_file = os.path.join(
         is4_copy_folder,
         'src',
-        'IdentityService',
         'Host',
         'Configuration',
         'resource.config.txt'
@@ -691,7 +689,6 @@ def HandleIs4ResourcesConfiguration(resources, identity_service, is4_copy_folder
     resources_cs_template_file = os.path.join(
         is4_copy_folder,
         'src',
-        'IdentityService',
         'Host',
         'Configuration',
         'Resources.cs'
@@ -754,12 +751,10 @@ def HanldeIs4Csproj(is4_options,is4_folder):
     print ('Configuring Identity Server 4 csproj')
     host_csproj_path = os.path.join(is4_folder,
         'src',
-        'IdentityService',
         'Host',
         'Host.csproj')
     host_eflib_csproj_path = os.path.join(is4_folder,
         'src',
-        'IdentityService',
         'IdentityServer4.EntityFramework',
         'IdentityServer4.EntityFramework.csproj')
     # Handle Host Application
@@ -798,7 +793,7 @@ def BuildConnStringForIs4(identity_options):
     return user_connection_string, config_connection_string
 def HandleConnectionStringForIs4(identity_options ,is4_copy_folder):
     userConnString, configConnString =  BuildConnStringForIs4(identity_options)
-    startup_file_path = os.path.join(is4_copy_folder,'src','IdentityService','Host','Startup.cs')
+    startup_file_path = os.path.join(is4_copy_folder,'src','Host','Startup.cs')
     with open(startup_file_path,'r') as cs_file:
         cs_content = cs_file.read()
     os.remove(startup_file_path)
@@ -811,7 +806,7 @@ def HandleConnectionStringForIs4(identity_options ,is4_copy_folder):
 
 def HandleEventBusForIs4(i_srv, is4_copy_folder):
     eventbus_srv = FindEventBusWithName(i_srv['eventbus']['bus_instance'])
-    startup_file_path = os.path.join(is4_copy_folder,'src','IdentityService','Host','Startup.cs')
+    startup_file_path = os.path.join(is4_copy_folder,'src','Host','Startup.cs')
     repleceDict = {
         '{{rabbitmq:host}}': eventbus_srv['name']
     }
@@ -819,10 +814,11 @@ def HandleEventBusForIs4(i_srv, is4_copy_folder):
         if 'environment' in eventbus_srv['docker_compose_set']:
             if 'RABBITMQ_DEFAULT_USER' in eventbus_srv['docker_compose_set']['environment']:
                 repleceDict['{{rabbitmq:user:username}}'] = eventbus_srv['docker_compose_set']['environment']['RABBITMQ_DEFAULT_USER']
+            else:
+                repleceDict['{{rabbitmq:user:username}}'] = 'doom'
             if 'RABBITMQ_DEFAULT_PASSWORD' in eventbus_srv['docker_compose_set']['environment']:
                 repleceDict['{{rabbitmq:user:password}}'] = eventbus_srv['docker_compose_set']['environment']['RABBITMQ_DEFAULT_PASSWORD']
             else:
-                repleceDict['{{rabbitmq:user:username}}'] = 'doom'
                 repleceDict['{{rabbitmq:user:password}}'] = 'machine'
         else:
             repleceDict['{{rabbitmq:user:username}}'] = 'doom'
@@ -838,8 +834,8 @@ def HandleDockerFileForIs4(identity_service, is4_copy_folder):
     docker_replace_dict['{{port}}'] = str(identity_service['ports'][0])
     replace_tamplate_file(docker_file_path,docker_replace_dict)
 def HandleStartupForIs4(identity_service, is4_copy_folder):
-    startup_file_path = os.path.join(is4_copy_folder,'src','IdentityService','Host','Startup.cs')
-    program_file_path = os.path.join(is4_copy_folder,'src','IdentityService','Host','Program.cs')
+    startup_file_path = os.path.join(is4_copy_folder,'src','Host','Startup.cs')
+    program_file_path = os.path.join(is4_copy_folder,'src','Host','Program.cs')
     HandleCSharpEventbus(identity_service,startup_file_path)
     HandleCSharpDatabase(identity_service,startup_file_path)
     HandleCSharpLogging(identity_service,startup_file_path)

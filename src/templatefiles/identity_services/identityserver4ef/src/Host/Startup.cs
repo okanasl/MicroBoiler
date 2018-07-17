@@ -115,7 +115,8 @@ namespace Host
                 // this adds the operational data from DB (codes, tokens, consents)
                 .AddOperationalStore(options =>
                 {
-                    options.ConfigureDbContext = builder =>
+                    options.ConfigureDbContext = (builder) =>
+                    {
 //& region (database)
     //& region (database:mssql)
                         builder.UseSqlServer(connectionString,
@@ -130,6 +131,7 @@ namespace Host
                             sql => sql.MigrationsAssembly(migrationsAssembly));
 //& end (database:mysql)
 //& region (database)
+                    };
                     // this enables automatic token cleanup. this is optional.
                     options.EnableTokenCleanup = true;
                     // options.TokenCleanupInterval = 10; // interval in seconds, short for testing
