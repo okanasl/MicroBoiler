@@ -65,8 +65,7 @@ def filter_sub_region(
         return
 def Clear_File_Region_Marks(file):
     lines = iter(file)
-    region_marks = ['&// region','<!-- region','&// end','<!-- end']
-    lines = iter(file)
+    region_marks = ('//& region','<!-- region','//& end','<!-- end')
     try:
         while True:
             line = next(lines)
@@ -875,6 +874,30 @@ def HandleDotnetApiCsproj(dotnet_service, api_copy_folder):
     HandleCsprojLogging(dotnet_service,api_csproj_path)
     HandleCsprojDatabase(dotnet_service,api_csproj_path)
     HandleCsprojEventbus(dotnet_service,api_csproj_path)
+def BuildConnStringForDotnetApi(dotnet_options):
+    database_instance_name = dotnet_options['database']['provider']
+    database_instance = FindDatabaseWithName(database_instance_name)
+    database_type = database_instance['type']
+    connection_string ='' 
+    user = 'doom'
+    password = 'machine'
+    if database_type=='mysql':
+        if 'docker_compose_set' in database_instance:
+            if 'environment' in database_instance['docker_compose_set']:
+                if 'MYSQL_USER' in database_instance['docker_compose_set']['environment']:
+                    user = database_instance['docker_compose_set']['environment']['MYSQL_USER']
+                if 'MYSQL_PASSWORD' in database_instance['docker_compose_set']['environment']:
+                    password = database_instance['docker_compose_set']['environment']['MYSQL_PASSWORD']
+    if database_type=='postgresql':
+        if 'docker_compose_set' in database_instance:
+            if 'environment' in database_instance['docker_compose_set']:
+                if 'POSTGRES_USER' in database_instance['docker_compose_set']['environment']:
+                    user = database_instance['docker_compose_set']['environment']['POSTGRES_USER']
+                if 'POSTGRES_PASSWORD' in database_instance['docker_compose_set']['environment']:
+                    password = database_instance['docker_compose_set']['environment']['POSTGRES_PASSWORD']
+    connection_string = BuildDatabaseConnectionString(database_type,database_instance['name'],dotnet_options['name']+'_users',user,password)        
+    
+    return connection_string
 def HandleDotnetApiStartup(dotnet_service, api_copy_folder):
     print ('Handle DotnetApi Startup.cs File')
     api_startup_path = os.path.join(api_copy_folder,
@@ -888,8 +911,12 @@ def HandleDotnetApiStartup(dotnet_service, api_copy_folder):
     # Set DBContext Name
     CamelCaseName = to_camelcase(dotnet_service['name'])
     replaceDict = {
-        'NameContext': CamelCaseName + 'Context'
+        'NameContext': CamelCaseName + 'Context'        
     }
+    if 'database' in dotnet_service:
+        database_instance = FindDatabaseWithName(dotnet_service['database']['provider'])
+        conn_string = BuildConnStringForDotnetApi(dotnet_service)
+        replaceDict['{{database:connectionString}}'] = conn_string
     replace_tamplate_file(api_startup_path,replaceDict)
 
 def HandleDotnetApiProgramFile(dotnet_service, api_copy_folder):
@@ -921,6 +948,35 @@ def HandleDotnetApiDbContext(dotnet_service, api_copy_folder):
             'src',
             'Data')
         os.remove(remove_data_folder_path)
+# Change Namespace To Service Name 
+# extensions: Tuple
+def FindAllFilesWithExtensionInDirectory(folder_path, extensions):
+    ext_files = []
+    for folder_root, dirs, files in os.walk(folder_path):
+        for file in files:
+            if file.endswith(extensions):
+                ext_files.append(os.path.join(os.path.abspath(folder_root),file))
+    return ext_files
+def ReplaceDotnetNameSpaces(file_paths, namespace_name, replace_name):
+    replace_dict = {}
+    replace_dict[namespace_name] = replace_name
+    for file in file_paths:
+        if os.path.exists(file):
+            replace_tamplate_file(file,replace_dict)
+def ClearRegionLines(file_paths):
+    for file in file_paths:        
+        with open(os.path.join(file), 'r+') as f:
+            filtered = list(Clear_File_Region_Marks(f))
+            f.seek(0)
+            f.writelines(filtered)
+            f.truncate()
+# Remove Region Tags
+def HandleDotnetApiNameSpaceAndCleaning(dotnet_service, api_copy_folder):
+    src_path = os.path.join(api_copy_folder,'src')
+    file_clean_paths = FindAllFilesWithExtensionInDirectory(src_path,('.cs','.csproj'))
+    CamelCaseServiceName = to_camelcase(dotnet_service['name'])
+    ReplaceDotnetNameSpaces(file_clean_paths,'DotnetWebApi',CamelCaseServiceName)
+    ClearRegionLines(file_clean_paths)
 def HandleDotnetApiService(api_service_options):
     CamelCaseName = to_camelcase(api_service_options['name'])
     api_template_folder = os.path.join(apiServicesPath,'dotnet_web_api','src')
@@ -943,9 +999,7 @@ def HandleDotnetApiService(api_service_options):
     HandleDotnetApiStartup(api_service_options,api_copy_folder)
     HandleDotnetApiProgramFile(api_service_options,api_copy_folder)
     HandleDotnetApiDbContext(api_service_options,api_copy_folder)
-    #HandleDotnetApiDataFolder(api_service_options,api_copy_folder)
-    #HandleDotnetApiProgramCs(api_service_options,api_copy_folder)
-    #HandleDotnetApiCleaning(api_service_options,api_copy_folder)
+    HandleDotnetApiNameSpaceAndCleaning(api_service_options,api_copy_folder)
 
 def HandleApiServices(api_services):
     print ('Scaffolding Api Services')
