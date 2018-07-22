@@ -6,10 +6,15 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
+
+//& region (logging)
 using Microsoft.Extensions.Logging;
+//& region (logging:serilog)
 using Serilog;
 using Serilog.Events;
 using Serilog.Sinks.SystemConsole.Themes;
+//& end (logging:serilog)
+//& end (logging)  
 
 namespace DotnetWebApi
 {

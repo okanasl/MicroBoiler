@@ -93,6 +93,7 @@ api_services:
    - foo_api:
       type: dotnet_web_api
       name: myFooApi
+      swagger: false
       eventbus: # optional
         bus_instance: rabbit_name # required
       authorization: # optional
@@ -106,7 +107,7 @@ api_services:
       database: 
         provider: postgre_name
         database_name: foo_api_db
-        create_database: true
+        create_migrations: true
       cache: # optional
         type: memory # required
       ports: [7000] # optional (random if not set)
@@ -116,12 +117,11 @@ api_services:
    - bar_api:
       type: dotnet_web_api
       name: MyBarApi
-      
+      swagger: true
       database: 
         provider: postgre_name
         database_name: bar_api_db
-        context_name: BarApiContext
-        create_database: true
+        create_migrations: true
       cache:
         type: redis
         redis_options: 

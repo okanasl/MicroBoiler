@@ -41,6 +41,10 @@ namespace IdentityServer4.Entities
         public DateTime DateActive { get; set; }
 
         /// <summary>
+        /// Application User Last Login Date
+        /// </summary>
+        public DateTime DateModify { get; set; }
+        /// <summary>
         /// Application User Constructor
         /// </summary>
         public ApplicationUser()
@@ -54,15 +58,15 @@ namespace IdentityServer4.Entities
             
         }
         /// <summary>
-        /// User Roles For Include Queries
+        /// User Roles For Include Reference Queries
         /// </summary>
         public List<IdentityUserRole<string>> Roles { get; set; } = new List<IdentityUserRole<string>>();
         /// <summary>
-        /// User Claims For Include Queries
+        /// User Claims For Include Reference Queries
         /// </summary>
         public virtual ICollection<IdentityUserClaim<string>> Claims { get; set; } = new List<IdentityUserClaim<string>>();
         /// <summary>
-        /// User Logins For Include Queries
+        /// User Logins For Include  Reference Queries
         /// </summary>
         public virtual ICollection<IdentityUserLogin<string>> Logins { get; set; } = new List<IdentityUserLogin<string>>();
     }

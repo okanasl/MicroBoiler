@@ -14,6 +14,24 @@ import nginx
 dotnet_logging_types = ['microsoft','serilog']
 database_types = ['postgresql','mysql','mssql']
 # end
+# global
+projectOptions = {}
+rememberize = {}
+scriptPath = os.path.dirname(os.path.realpath(sys.argv[0]))
+templatesPath = os.path.normpath(os.path.join(scriptPath,'templatefiles'))
+serversPath = os.path.join(templatesPath,'servers')
+apiServicesPath = os.path.join(templatesPath,'api_services')
+clientsPath = os.path.join(templatesPath,'clients')
+databasesPath = os.path.join(templatesPath,'databases')
+eventbusPath = os.path.join(templatesPath,'eventbus')
+identityServicesPath = os.path.join(templatesPath,'identity_services')
+
+dockerOptions = {'version' : 3, 'services': [], 'networks':[{'localnet':{'driver':'bridge'}}]}
+optionsFilePath = ""
+projectDir = ""
+srcDir = ""
+# end global
+
 # helpers
 def InDbQ(value):
     return '\"'+value+'\"'
@@ -57,7 +75,7 @@ def filter_sub_region(
     try:
         while True:
             line = next(lines)
-            if parent_marker_start in line and child_marker not in line and ':all' not in line:
+            if parent_marker_start in line and child_marker not in line:
                 while parent_marker_end not in line:
                     line = next(lines)
             yield line
@@ -215,7 +233,16 @@ def HandleCSharpServer(service_options,sharp_file_path):
                 f.seek(0)
                 f.writelines(filtered)
                 f.truncate()
-
+def HandleCSharpSwagger(dotnet_service, sharp_file_path):
+    is_swagger_in_config = 'swagger' in dotnet_service
+    if(is_swagger_in_config):
+        swagger_enabled = dotnet_service['swagger']
+        if not swagger_enabled:
+            with open(os.path.join(sharp_file_path), 'r+') as f:
+                    filtered = list(filter_region(f, 'region (swagger)', 'end (swagger)'))
+                    f.seek(0)
+                    f.writelines(filtered)
+                    f.truncate()
 def HandleCSharpEventbus(service_options, sharp_file_path):
     eventbus_enabled = 'eventbus' in service_options
     
@@ -246,23 +273,7 @@ def HandleCSharpEventbus(service_options, sharp_file_path):
                 f.writelines(filtered)
                 f.truncate()
 # end C# helpers
-# global
-projectOptions = {}
-rememberize = {}
-scriptPath = os.path.dirname(os.path.realpath(sys.argv[0]))
-templatesPath = os.path.normpath(os.path.join(scriptPath,'templatefiles'))
-serversPath = os.path.join(templatesPath,'servers')
-apiServicesPath = os.path.join(templatesPath,'api_services')
-clientsPath = os.path.join(templatesPath,'clients')
-databasesPath = os.path.join(templatesPath,'databases')
-eventbusPath = os.path.join(templatesPath,'eventbus')
-identityServicesPath = os.path.join(templatesPath,'identity_services')
 
-dockerOptions = {'version' : 3, 'services': [], 'networks':[{'localnet':{'driver':'bridge'}}]}
-optionsFilePath = ""
-projectDir = ""
-srcDir = ""
-# end global
 
 def CreateProjectDirectory(projectName):
     print ("Scaffolding Project", projectName)
@@ -895,19 +906,21 @@ def BuildConnStringForDotnetApi(dotnet_options):
                     user = database_instance['docker_compose_set']['environment']['POSTGRES_USER']
                 if 'POSTGRES_PASSWORD' in database_instance['docker_compose_set']['environment']:
                     password = database_instance['docker_compose_set']['environment']['POSTGRES_PASSWORD']
-    connection_string = BuildDatabaseConnectionString(database_type,database_instance['name'],dotnet_options['name']+'_users',user,password)        
+    connection_string = BuildDatabaseConnectionString(database_type,database_instance['name'],dotnet_options['name'],user,password)        
     
     return connection_string
+
 def HandleDotnetApiStartup(dotnet_service, api_copy_folder):
     print ('Handle DotnetApi Startup.cs File')
     api_startup_path = os.path.join(api_copy_folder,
-    'src',
-    'Startup.cs')
+        'src',
+        'Startup.cs')
     
     HandleCSharpDatabase(dotnet_service,api_startup_path)
     HandleCSharpEventbus(dotnet_service,api_startup_path)
     HandleCSharpLogging(dotnet_service,api_startup_path)
     HandleCSharpServer(dotnet_service,api_startup_path)
+    HandleCSharpSwagger(dotnet_service,api_startup_path)
     # Set DBContext Name
     CamelCaseName = to_camelcase(dotnet_service['name'])
     replaceDict = {
@@ -921,15 +934,15 @@ def HandleDotnetApiStartup(dotnet_service, api_copy_folder):
 
 def HandleDotnetApiProgramFile(dotnet_service, api_copy_folder):
     api_program_path = os.path.join(api_copy_folder,
-    'src',
-    'Program.cs')
+        'src',
+        'Program.cs')
 
     HandleCSharpLogging(dotnet_service,api_program_path)
 def HandleDotnetApiDbContext(dotnet_service, api_copy_folder):
     dbcontext_path = os.path.join(api_copy_folder,
-    'src',
-    'Data',
-    'NameContext.cs')
+        'src',
+        'Data',
+        'NameContext.cs')
     CamelCaseDbName = to_camelcase(dotnet_service['name']) + 'Context'
     if 'database' in dotnet_service:
         if os.path.exists(dbcontext_path):

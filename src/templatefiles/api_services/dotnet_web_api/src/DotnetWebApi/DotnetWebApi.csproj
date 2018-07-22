@@ -28,7 +28,11 @@
     <PackageReference Include="MassTransit.RabbitMq" Version="5.1.2" /> 
   </ItemGroup>
 <!-- end (eventbus) -->
-
+<!-- region (swagger) -->
+  <ItemGroup>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="3.0.0" />   
+  </ItemGroup>
+<!-- end (swagger) -->
 <!-- region (database:postgresql) -->
   <ItemGroup>
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="2.1.0" />   
