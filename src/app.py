@@ -89,7 +89,8 @@ def Clear_File_Region_Marks(file):
             line = next(lines)
             for mark in region_marks:
                 if mark in line:
-                    line = next(lines)         
+                    line = next(lines)
+                    break
             yield line
     except StopIteration:
         return
@@ -162,7 +163,7 @@ def HandleCsprojEventbus(service_options, host_csproj_path):
     eventbus_enabled = 'eventbus' in service_options
     
     if(eventbus_enabled):
-        eventbus_instance = FindEventBusWithName(service_options['eventbus']['bus_instance'])
+        eventbus_instance = FindEventBusWithName(service_options['eventbus']['provider'])
 
         eventbus_type = eventbus_instance['type']
         with open(os.path.join(host_csproj_path), 'r+') as f:
@@ -249,7 +250,7 @@ def HandleCSharpEventbus(service_options, sharp_file_path):
     if(eventbus_enabled):
         eb_replace_dict = {}
         
-        eventbus_instance = FindEventBusWithName(service_options['eventbus']['bus_instance'])
+        eventbus_instance = FindEventBusWithName(service_options['eventbus']['provider'])
 
         if eventbus_instance['type'] == 'rabbitmq':
             eb_replace_dict['{{rabbitmq:host}}'] = eventbus_instance['name']
@@ -299,7 +300,7 @@ def AddNginxToDockerOptions(server,api_services, clients,identity_services):
             'networks': ['localnet'],
             'build': {'context': server['name']+'/', 'dockerfile':'Dockerfile'}        
     }
-    if( 'ports' in server):        
+    if 'ports' in server:        
         for port in server['ports']:
             nginxOptions['ports'].append(str(port)+':'+str(port))
     else: 
@@ -406,21 +407,22 @@ def FindApiServicesUsesNginx(serverName):
     for service in projectOptions['api_services']:
         for key, value in service.items():
             if value['server'] == serverName:
-                services.append({'ports':value['ports'],'name':value['name'] })
+                services.append(value)
+                print (value)
     return services
 def FindClientsUsesNginx(serverName):
     clients = []
     for client in projectOptions['clients']:
         for key, value in client.items():            
             if value['server'] == serverName:
-                clients.append({'ports':value['ports'],'name':value['name'] })
+                clients.append(value)
     return clients
 def FindIdentityServicesUsesNginx(serverName):
     i_services = []
     for i_service in projectOptions['identity_services']:
         for key, value in i_service.items():            
             if value['server'] == serverName:
-                i_services.append({'ports':value['ports'],'name':value['name'] })
+                i_services.append(value)
     return i_services
 def HandleServers(servers):
     print ('Configuring servers')
@@ -553,7 +555,7 @@ def FindApiServicesUsesRabbitmq(rabbit_name):
     for service in projectOptions['api_services']:
         for key, value in service.items():            
             if 'eventbus' in value:
-                if value['eventbus']['bus_instance'] == rabbit_name:
+                if value['eventbus']['provider'] == rabbit_name:
                     api_services.append(value['name'])
     return api_services
 
@@ -562,7 +564,7 @@ def FindIdentityServicesUsesRabbitmq(rabbit_name):
     for service in projectOptions['identity_services']:
         for key, value in service.items():            
             if 'eventbus' in value:
-                if value['eventbus']['bus_instance'] == rabbit_name:
+                if value['eventbus']['provider'] == rabbit_name:
                     i_services.append(value['name'])
     return i_services
 
@@ -815,7 +817,7 @@ def HandleConnectionStringForIs4(identity_options ,is4_copy_folder):
         cs_file_new.write(cs_content)
 
 def HandleEventBusForIs4(i_srv, is4_copy_folder):
-    eventbus_srv = FindEventBusWithName(i_srv['eventbus']['bus_instance'])
+    eventbus_srv = FindEventBusWithName(i_srv['eventbus']['provider'])
     startup_file_path = os.path.join(is4_copy_folder,'src','Host','Startup.cs')
     repleceDict = {
         '{{rabbitmq:host}}': eventbus_srv['name']
@@ -850,8 +852,32 @@ def HandleStartupForIs4(identity_service, is4_copy_folder):
     HandleCSharpDatabase(identity_service,startup_file_path)
     HandleCSharpLogging(identity_service,startup_file_path)
     HandleCSharpServer(identity_service,startup_file_path)
-
     HandleCSharpLogging(identity_service,program_file_path)
+def HandleDockerComposeForIs4(identity_service, is4_copy_folder):
+    is4_docker_props = {
+        'image': identity_service['name'],
+        'build': {
+            'context': 'src/IdentityServices/'+identity_service['name'],
+            'dockerfile': 'Dockerfile'
+        },
+        'ports': [],
+        'links': [],
+        'depends_on':[],
+        'networks':['localnet'],        
+    }
+    is4_docker_props['links'].append(identity_service['database']['provider'])
+    is4_docker_props['depends_on'].append(identity_service['database']['provider'])
+    for port in identity_service['ports']:
+        is4_docker_props['ports'].append(str(port)+':'+str(port))
+    eventbus_enabled = 'eventbus' in identity_service
+    if eventbus_enabled:
+        eb_provider = identity_service['eventbus']['provider']        
+        is4_docker_props['links'].append(eb_provider)
+        is4_docker_props['depends_on'].append(eb_provider)
+    docker_opts_to_set = {
+        identity_service['name']: is4_docker_props
+    }
+    dockerOptions['services'].append(docker_opts_to_set)
 def HandleIdentityServer4(identity_service):
     is4_template_folder = os.path.join(identityServicesPath,'identityserver4ef')
     is4_copy_folder = os.path.join(srcDir,'IdentityServices',identity_service['name'])
@@ -867,6 +893,7 @@ def HandleIdentityServer4(identity_service):
     if 'eventbus' in identity_service:
         HandleEventBusForIs4(identity_service, is4_copy_folder)
     HandleDockerFileForIs4(identity_service, is4_copy_folder)
+    HandleDockerComposeForIs4(identity_service, is4_copy_folder)
     HandleStartupForIs4(identity_service, is4_copy_folder)
 
     
@@ -990,6 +1017,7 @@ def HandleDotnetApiNameSpaceAndCleaning(dotnet_service, api_copy_folder):
     CamelCaseServiceName = to_camelcase(dotnet_service['name'])
     ReplaceDotnetNameSpaces(file_clean_paths,'DotnetWebApi',CamelCaseServiceName)
     ClearRegionLines(file_clean_paths)
+    
 def HandleDotnetApiService(api_service_options):
     CamelCaseName = to_camelcase(api_service_options['name'])
     api_template_folder = os.path.join(apiServicesPath,'dotnet_web_api','src')

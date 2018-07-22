@@ -81,7 +81,7 @@ identity_services:
       type: identityserver4
       name: myIdentityService
       eventbus: 
-        bus_instance: rabbit_name
+        provider: rabbit_name
       ports: [5000]
       server: 
         provider: myNginxServer
@@ -95,7 +95,7 @@ api_services:
       name: myFooApi
       swagger: false
       eventbus: # optional
-        bus_instance: rabbit_name # required
+        provider: rabbit_name # required
       authorization: # optional
         issuer: myIdentityService # required
         api_secret: myIdentityService_secret # optional
@@ -128,7 +128,7 @@ api_services:
           redis_server: my_redis
           redis_instance_name: master
       eventbus: 
-        bus_instance: rabbit_name
+        provider: rabbit_name
       ports: [8000]
       server: 
         provider: myNginxServer 

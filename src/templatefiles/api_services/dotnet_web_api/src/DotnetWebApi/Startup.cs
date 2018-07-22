@@ -1,32 +1,35 @@
 ﻿
 
-
-//& region (authorization)
-    //& region (authorization:identityserver4)
-using IdentityServer4.AccessTokenValidation;
-    //& end (authorization:identityserver4)
-    //& region (authorization:keycloack)
-    // TODO: Implement keycloack
-    //& end (authorization:keycloack)
-//& end (authorization)
-
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+
+//& region (authorization)
+//& region (authorization:identityserver4)
+using IdentityServer4.AccessTokenValidation;
+//& end (authorization:identityserver4)
+//& region (authorization:keycloack)
+    // In Future..
+//& end (authorization:keycloack)
+//& end (authorization)
+//& region (logging)
+using Microsoft.Extensions.Logging;
+//& end (logging)
+//& region (eventbus)
 using DotnetWebApi.Services;
+//& end (evenybus)
+//& region (database)
 using DotnetWebApi.Data;
+//& end (database)
+//& region (database)
 using Microsoft.EntityFrameworkCore;
+//& end (database)
 //& region (server)
 using Microsoft.AspNetCore.HttpOverrides;
 //& end (server)
@@ -180,7 +183,7 @@ namespace DotnetWebApi
             }
             else
             {
-                app.UseHsts();
+                // app.UseHsts(); After you configure SSL with nginx
             }
 //& region (authorization)
             app.UseAuthentication();
