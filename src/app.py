@@ -83,15 +83,19 @@ def filter_sub_region(
         return
 def Clear_File_Region_Marks(file):
     lines = iter(file)
-    region_marks = ('//& region','<!-- region','//& end','<!-- end')
+    region_marks = ['//& region','<!-- region','//& end','<!-- end']
+    re_lines = []
     try:
-        while True:
-            line = next(lines)
+        for line in lines:
+            found = False
             for mark in region_marks:
                 if mark in line:
-                    line = next(lines)
-                    break
-            yield line
+                    found = True
+            if not found:
+                yield line
+        while True:
+            line = next(lines)
+            
     except StopIteration:
         return
 def BuildDatabaseConnectionString(database_type,server_host,database_name,user,password):
@@ -102,6 +106,8 @@ def BuildDatabaseConnectionString(database_type,server_host,database_name,user,p
         return "Server={0};Database={1};Username={2};Password={3}".format(server_host,database_name,user,password)
     elif (database_type == 'mssql'):
         return "Data Source={0};Initial Catalog={1};User Id={2};Password={3}".format(server_host,database_name,user,password)
+def BuildRedisConnectionString(redis_options):
+    return redis_options['name']
 # end helpers
 # service helpers
 def FindDatabaseWithName(name):
@@ -217,11 +223,26 @@ def HandleCSharpDatabase(service_options, sharp_file_path):
                 f.seek(0)
                 f.writelines(filtered)
                 f.truncate()
+def HandleCSharpCache(service_options, sharp_file_path):
+    cache_enabled = 'cache' in service_options
+    
+    if(cache_enabled):
+        cache_type = service_options['cache']['type']
+        with open(os.path.join(sharp_file_path), 'r+') as f:
+            filtered = list(filter_sub_region(f, 'cache',cache_type))
+            f.seek(0)
+            f.writelines(filtered)
+            f.truncate()
+    else:
+        with open(os.path.join(sharp_file_path), 'r+') as f:
+                filtered = list(filter_region(f, 'region (cache)', 'end (cache)'))
+                f.seek(0)
+                f.writelines(filtered)
+                f.truncate()
 def HandleCSharpServer(service_options,sharp_file_path):
     server_enabled = 'server' in service_options
     if(server_enabled):
         server_instance = FindServerWithName(service_options['server']['provider'])
-        print (server_instance)
         server_type = server_instance['type']
         with open(os.path.join(sharp_file_path), 'r+') as f:
             filtered = list(filter_sub_region(f, 'server',server_type))
@@ -291,8 +312,6 @@ def CreateProjectDirectory(projectName):
 
 # Configure Nginx in docker-compose
 def AddNginxToDockerOptions(server,api_services, clients,identity_services):
-    print ('AddNginxs')
-    print (api_services)
     nginxOptions = {        
             'image': 'nginxhttp',
             'container_name': server['name'],
@@ -400,7 +419,6 @@ def BuildNginxConfiguration(server, api_services,clients, identity_services):
         nginxServer.add(location)
         httpConf.add(nginxServer)
     config.add(httpConf)
-    print (httpConf)
     return config
     
 
@@ -714,7 +732,6 @@ def HandleIs4ResourcesConfiguration(resources, identity_service, is4_copy_folder
     resource_config_as_cs = ""
     resource_count = len(resources)
     for resource_ind, resource in enumerate(resources):
-        print (resource)
         resource_host = resource['name'].lower()+'.localhost' 
         resource_config_as_cs += (
             template_string 
@@ -948,6 +965,7 @@ def HandleDotnetApiStartup(dotnet_service, api_copy_folder):
         'Startup.cs')
     
     HandleCSharpDatabase(dotnet_service,api_startup_path)
+    HandleCSharpCache(dotnet_service,api_startup_path)
     HandleCSharpEventbus(dotnet_service,api_startup_path)
     HandleCSharpLogging(dotnet_service,api_startup_path)
     HandleCSharpServer(dotnet_service,api_startup_path)
@@ -961,6 +979,13 @@ def HandleDotnetApiStartup(dotnet_service, api_copy_folder):
         database_instance = FindDatabaseWithName(dotnet_service['database']['provider'])
         conn_string = BuildConnStringForDotnetApi(dotnet_service)
         replaceDict['{{database:connectionString}}'] = conn_string
+    if 'cache' in dotnet_service:
+        if dotnet_service['cache']['type'] == 'redis':
+            redis_instance = FindDatabaseWithName(dotnet_service['cache']['redis_options']['redis_server'])
+            redis_conn_string = BuildRedisConnectionString(redis_instance)
+            replaceDict['{{redis_options:connection}}'] = redis_conn_string
+            if 'redis_instance_name' in dotnet_service['cache']['redis_options']['redis_server']:
+                replaceDict['{{redis_options:instance_name}}'] = dotnet_service['cache']['redis_options']['redis_server']['instance_name']
     replace_tamplate_file(api_startup_path,replaceDict)
 
 def HandleDotnetApiProgramFile(dotnet_service, api_copy_folder):
@@ -1105,7 +1130,7 @@ while True:
                 # Load Yaml
                 projectOptions = yaml.load(stream)
                 if not ('name' in projectOptions):
-                    print('Please Provide a valid project_name')
+                    print('Please Provide a valid project name')
                     break
                 projectName = projectOptions['name']
                 # Create Project Files

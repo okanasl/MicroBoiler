@@ -77,7 +77,7 @@ namespace DotnetWebApi
     //& region (cache:redis)
             services.AddDistributedRedisCache(option =>
             {
-                option.Configuration = "{{redis_options:connection}}";
+                option.Configuration = "@{{redis_options:connection}}";
                 option.InstanceName = "{{redis_options:instance_name}}";
             });
     //& end (cache:redis)
@@ -107,7 +107,7 @@ namespace DotnetWebApi
                    options.SupportedTokens = SupportedTokens.Both;
                });
     //& end (authorization:identityserver4)
-//& end
+//& end (authorization)
 //& region (eventbus)
     //& region (eventbus:rabbitmq)
             services.AddMassTransit(p=>{

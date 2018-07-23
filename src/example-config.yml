@@ -107,7 +107,7 @@ api_services:
       database: 
         provider: postgre_name
         database_name: foo_api_db
-        create_migrations: true
+        create_database: true
       cache: # optional
         type: memory # required
       ports: [7000] # optional (random if not set)
@@ -121,12 +121,12 @@ api_services:
       database: 
         provider: postgre_name
         database_name: bar_api_db
-        create_migrations: true
+        create_database: true
       cache:
         type: redis
         redis_options: 
           redis_server: my_redis
-          redis_instance_name: master
+          redis_instance_name: my_common_redis_cache
       eventbus: 
         provider: rabbit_name
       ports: [8000]
@@ -143,7 +143,7 @@ api_services:
          - "bar_api_read"
          - "bar_api_write"
          - "bar_api_fullaccess"
-        user_claims: # claims that issued with jwt token
+        user_claims: # claims that is avaliable for user profile
          - "sub"
          - "updated_at"
          - "iat"

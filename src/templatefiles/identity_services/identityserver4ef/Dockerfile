@@ -6,7 +6,6 @@ WORKDIR /identityapp
 # Copy all of the source files
 COPY * ./
 # Restore all packages
-# RUN dotnet restore ./IdentityService/IdentityServer4.Entityframework/IdentityServer4.Entityframework.csproj
 RUN dotnet restore ./Host/Host.csproj 
 
 # Build the source code

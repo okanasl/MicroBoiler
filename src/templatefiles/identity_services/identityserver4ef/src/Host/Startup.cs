@@ -58,17 +58,20 @@ namespace Host
             const string connectionString = @"{{database:configconnectionstring}}";
 //& region (database:mssql)
             services.AddDbContext<UserDbContext>(options =>
-                options.UseSqlServer(userconnectionString)
+                options.UseSqlServer(userconnectionString,
+                    sql => sql.MigrationsAssembly(migrationsAssembly))
                 );
 //& end (database:mssql)
 //& region (database:mysql)
             services.AddDbContext<UserDbContext>(options =>
-                options.UseMySql(userconnectionString)
+                options.UseMySql(userconnectionString,
+                    sql => sql.MigrationsAssembly(migrationsAssembly))
                 );
 //& end (database:mysql)
 //& region (database:postgresql)
             services.AddDbContext<UserDbContext>(options =>
-                options.UseNpgsql(userconnectionString)
+                options.UseNpgsql(userconnectionString,
+                    sql => sql.MigrationsAssembly(migrationsAssembly))
                 );
 //& end (database:postgresql)
 //& end (database)
