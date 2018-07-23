@@ -1017,7 +1017,7 @@ def HandleDotnetApiNameSpaceAndCleaning(dotnet_service, api_copy_folder):
     CamelCaseServiceName = to_camelcase(dotnet_service['name'])
     ReplaceDotnetNameSpaces(file_clean_paths,'DotnetWebApi',CamelCaseServiceName)
     ClearRegionLines(file_clean_paths)
-    
+
 def HandleDotnetApiService(api_service_options):
     CamelCaseName = to_camelcase(api_service_options['name'])
     api_template_folder = os.path.join(apiServicesPath,'dotnet_web_api','src')
@@ -1028,12 +1028,20 @@ def HandleDotnetApiService(api_service_options):
     api_src_rename_folder = os.path.join(srcDir,'ApiServices',CamelCaseName,'src')
     api_csproj_folder = os.path.join(srcDir,'ApiServices',CamelCaseName,'src','DotnetWebApi.csproj')
     api_csproj_rename_folder = os.path.join(srcDir,'ApiServices',CamelCaseName,'src',CamelCaseName+'.csproj')
+    
     if not os.path.exists(api_src_rename_folder):
         shutil.copytree(api_src_folder,api_src_rename_folder)
         shutil.rmtree( api_src_folder,ignore_errors=True)
+    else: 
+        shutil.rmtree( api_src_rename_folder,ignore_errors=True)
+        shutil.copytree(api_src_folder,api_src_rename_folder)
+
     if not os.path.exists(api_csproj_rename_folder):
         shutil.copy(api_csproj_folder,api_csproj_rename_folder)
         os.remove( api_csproj_folder)
+    else: 
+        os.remove(api_csproj_rename_folder)
+        shutil.copy(api_csproj_folder,api_csproj_rename_folder)
 
 
     HandleDotnetApiCsproj(api_service_options,api_copy_folder)
