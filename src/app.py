@@ -291,6 +291,8 @@ def CreateProjectDirectory(projectName):
 
 # Configure Nginx in docker-compose
 def AddNginxToDockerOptions(server,api_services, clients,identity_services):
+    print ('AddNginxs')
+    print (api_services)
     nginxOptions = {        
             'image': 'nginxhttp',
             'container_name': server['name'],
@@ -406,23 +408,25 @@ def FindApiServicesUsesNginx(serverName):
     services = []
     for service in projectOptions['api_services']:
         for key, value in service.items():
-            if value['server'] == serverName:
-                services.append(value)
-                print (value)
+            if 'server' in value:
+                if value['server']['provider'] == serverName:
+                    services.append(value)
     return services
 def FindClientsUsesNginx(serverName):
     clients = []
     for client in projectOptions['clients']:
         for key, value in client.items():            
-            if value['server'] == serverName:
-                clients.append(value)
+            if 'server' in value:
+                if value['server']['provider'] == serverName:
+                    clients.append(value)
     return clients
 def FindIdentityServicesUsesNginx(serverName):
     i_services = []
     for i_service in projectOptions['identity_services']:
         for key, value in i_service.items():            
-            if value['server'] == serverName:
-                i_services.append(value)
+            if 'server' in value:
+                if value['server']['provider'] == serverName:
+                    i_services.append(value)
     return i_services
 def HandleServers(servers):
     print ('Configuring servers')
@@ -473,7 +477,7 @@ def HandleMySql(db_options):
             'image': 'mysql/mysql-server:5.7',
             'container_name': db_options['name'],
             'command': 'mysqld --user=root --verbose',
-            'volumes': ['mysqlvol:/var/lib/mysql'],
+            'volumes': ['mysqlvol:/var/lib/mysql/data'],
             'networks':['localnet'],
             'environment': {
                 'MYSQL_USER': '"doom"',
@@ -840,7 +844,7 @@ def HandleEventBusForIs4(i_srv, is4_copy_folder):
         repleceDict['{{rabbitmq:user:password}}'] = 'machine'
     replace_tamplate_file(startup_file_path, repleceDict)
 
-def HandleDockerFileForIs4(identity_service, is4_copy_folder):
+def HandleIs4DockerFile(identity_service, is4_copy_folder):
     docker_file_path = os.path.join(is4_copy_folder,'Dockerfile')
     docker_replace_dict = {}
     docker_replace_dict['{{port}}'] = str(identity_service['ports'][0])
@@ -853,11 +857,11 @@ def HandleStartupForIs4(identity_service, is4_copy_folder):
     HandleCSharpLogging(identity_service,startup_file_path)
     HandleCSharpServer(identity_service,startup_file_path)
     HandleCSharpLogging(identity_service,program_file_path)
-def HandleDockerComposeForIs4(identity_service, is4_copy_folder):
+def HandleIs4DockerCompose(identity_service, is4_copy_folder):
     is4_docker_props = {
         'image': identity_service['name'],
         'build': {
-            'context': 'src/IdentityServices/'+identity_service['name'],
+            'context': 'src/IdentityServices/'+identity_service['name']+'/',
             'dockerfile': 'Dockerfile'
         },
         'ports': [],
@@ -892,8 +896,8 @@ def HandleIdentityServer4(identity_service):
     HandleConnectionStringForIs4(identity_service ,is4_copy_folder)
     if 'eventbus' in identity_service:
         HandleEventBusForIs4(identity_service, is4_copy_folder)
-    HandleDockerFileForIs4(identity_service, is4_copy_folder)
-    HandleDockerComposeForIs4(identity_service, is4_copy_folder)
+    HandleIs4DockerFile(identity_service, is4_copy_folder)
+    HandleIs4DockerCompose(identity_service, is4_copy_folder)
     HandleStartupForIs4(identity_service, is4_copy_folder)
 
     
@@ -1017,7 +1021,39 @@ def HandleDotnetApiNameSpaceAndCleaning(dotnet_service, api_copy_folder):
     CamelCaseServiceName = to_camelcase(dotnet_service['name'])
     ReplaceDotnetNameSpaces(file_clean_paths,'DotnetWebApi',CamelCaseServiceName)
     ClearRegionLines(file_clean_paths)
-
+def HandleDotnetApiDockerFile(dotnet_service, api_copy_folder):
+    docker_file_path = os.path.join(api_copy_folder,'Dockerfile')
+    docker_replace_dict = {}
+    docker_replace_dict['{{port}}'] = str(dotnet_service['ports'][0])
+    docker_replace_dict['{{project_name}}'] = to_camelcase(dotnet_service['name'])
+    replace_tamplate_file(docker_file_path,docker_replace_dict)
+def HandleDotnetApiDockerCompose(dotnet_service,api_copy_folder):
+    docker_props = {
+        'image': dotnet_service['name'],
+        'build': {
+            'context': 'src/ApiServices/'+to_camelcase(dotnet_service['name'])+'/',
+            'dockerfile': 'Dockerfile'
+        },
+        'ports': [],
+        'links': [],
+        'depends_on':[],
+        'networks':['localnet'],        
+    }
+    if 'database' in dotnet_service:
+        docker_props['links'].append(dotnet_service['database']['provider'])
+        docker_props['depends_on'].append(dotnet_service['database']['provider'])
+    if 'ports' in dotnet_service:
+        for port in dotnet_service['ports']:
+            docker_props['ports'].append(str(port)+':'+str(port))
+    eventbus_enabled = 'eventbus' in dotnet_service
+    if eventbus_enabled:
+        eb_provider = dotnet_service['eventbus']['provider']        
+        docker_props['links'].append(eb_provider)
+        docker_props['depends_on'].append(eb_provider)
+    docker_opts_to_set = {
+        dotnet_service['name']: docker_props
+    }
+    dockerOptions['services'].append(docker_opts_to_set)
 def HandleDotnetApiService(api_service_options):
     CamelCaseName = to_camelcase(api_service_options['name'])
     api_template_folder = os.path.join(apiServicesPath,'dotnet_web_api','src')
@@ -1049,7 +1085,8 @@ def HandleDotnetApiService(api_service_options):
     HandleDotnetApiProgramFile(api_service_options,api_copy_folder)
     HandleDotnetApiDbContext(api_service_options,api_copy_folder)
     HandleDotnetApiNameSpaceAndCleaning(api_service_options,api_copy_folder)
-
+    HandleDotnetApiDockerFile(api_service_options,api_copy_folder)
+    HandleDotnetApiDockerCompose(api_service_options,api_copy_folder)
 def HandleApiServices(api_services):
     print ('Scaffolding Api Services')
     for api_service in api_services:
