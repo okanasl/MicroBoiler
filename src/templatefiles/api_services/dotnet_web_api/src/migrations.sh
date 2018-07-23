@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/bin/sh
 cd src/{{ProjectName}}
 rm -rf Migrations
 

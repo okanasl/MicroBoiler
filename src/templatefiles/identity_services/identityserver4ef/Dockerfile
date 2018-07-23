@@ -7,10 +7,10 @@ WORKDIR /identityapp
 COPY * ./
 # Restore all packages
 # RUN dotnet restore ./IdentityService/IdentityServer4.Entityframework/IdentityServer4.Entityframework.csproj
-RUN dotnet restore ./IdentityService/Host/Host.csproj 
+RUN dotnet restore ./Host/Host.csproj 
 
 # Build the source code
-RUN dotnet build ./IdentityService/Host/Host.csproj
+RUN dotnet build ./Host/Host.csproj
 
 
 # Ensure that we generate and migrate the database
@@ -21,7 +21,7 @@ RUN sh updatedb.sh
 
 # Publish application
 WORKDIR ..
-RUN dotnet publish ./src/IdentityService/Host/Host.csproj --output "../../dist"
+RUN dotnet publish ./identityapp/Host/Host.csproj --output "/dist"
 
 # Build runtime image
 FROM microsoft/dotnet:2.1-aspnetcore-runtime-alpine AS app
