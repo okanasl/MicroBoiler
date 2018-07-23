@@ -1,2 +1,2 @@
-python-nginx=1.4.1
-pyyaml=3.12
+python-nginx==1.4.1
+pyyaml==3.12
