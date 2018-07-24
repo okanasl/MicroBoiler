@@ -170,7 +170,7 @@ api_services:
          - "email"
 clients: 
    - web_1:
-      type: web_angular_6
+      type: angular_cli_6_ssr
       name: myAngularClient
       add_npm_packages:
        - name: '@ngrx/store'

@@ -6,15 +6,6 @@
     "type": "git",
     "url": "https://github.com/angular/universal-starter.git"
   },
-  "contributors": [
-    "AngularClass <hello@angularclass.com>",
-    "PatrickJS <patrick@angularclass.com>",
-    "Jeff Whelpley <jeff@gethuman.com>",
-    "Jeff Cross <crossj@google.com>",
-    "Mark Pieszak <mpieszak84@gmail.com>",
-    "Jason Jean <jasonjean1993@gmail.com>",
-    "Fabian Wiles <fabian.wiles@gmail.com>"
-  ],
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
@@ -44,6 +35,7 @@
     "@nguniversal/common": "^6.0.0",
     "@nguniversal/express-engine": "^6.0.0",
     "@nguniversal/module-map-ngfactory-loader": "^6.0.0",
+    "angular-auth-oidc-client": "^6.0.2",
     "core-js": "^2.4.1",
     "rxjs": "6.0.0",
     "zone.js": "^0.8.26"

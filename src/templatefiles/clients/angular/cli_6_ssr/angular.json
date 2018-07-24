@@ -22,6 +22,16 @@
                 "output": "/assets"
               },
               {
+                "glob": "silent-renew.html",
+                "input": "src",
+                "output": "/"
+              },
+              {
+                "glob": "login_callback.html",
+                "input": "src",
+                "output": "/"
+              },
+              {
                 "glob": "favicon.ico",
                 "input": "src",
                 "output": "/"
@@ -87,6 +97,16 @@
                 "output": "/assets"
               },
               {
+                "glob": "silent-renew.html",
+                "input": "src",
+                "output": "/"
+              },
+              {
+                "glob": "login-callback.html",
+                "input": "src",
+                "output": "/"
+              },
+              {
                 "glob": "favicon.ico",
                 "input": "src",
                 "output": "/"
@@ -109,6 +129,18 @@
           "builder": "@angular-devkit/build-angular:server",
           "options": {
             "outputPath": "dist/server",
+            "assets": [
+              {
+                "glob": "silent-renew.html",
+                "input": "src",
+                "output": "/"
+              },
+              {
+                "glob": "login-callback.html",
+                "input": "src",
+                "output": "/"
+              }
+            ],
             "main": "src/main.server.ts",
             "tsConfig": "src/tsconfig.server.json"
           },

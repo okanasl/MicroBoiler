@@ -4,7 +4,11 @@ import {RouterModule} from '@angular/router';
 
 import { AppComponent } from './app.component';
 import { HomeComponent } from './home/home.component';
-import {TransferHttpCacheModule} from '@nguniversal/common';
+import { TransferHttpCacheModule } from '@nguniversal/common';
+//& region (authorization)
+import { AuthClModule } from './auth/auth.module';
+import { LoginComponent } from './auth/components/login/login.component';
+//& end (authorization)
 
 @NgModule({
   declarations: [
@@ -12,9 +16,15 @@ import {TransferHttpCacheModule} from '@nguniversal/common';
     HomeComponent,
   ],
   imports: [
+//& region (authorization)
+    AuthClModule,
+//& end (authorization)
     BrowserModule.withServerTransition({appId: 'my-app'}),
     RouterModule.forRoot([
       { path: '', component: HomeComponent, pathMatch: 'full'},
+//& region (authorization)
+      { path: 'login', component: LoginComponent, pathMatch: 'full'},
+//& end (authorization)
       { path: 'lazy', loadChildren: './lazy/lazy.module#LazyModule'},
       { path: 'lazy/nested', loadChildren: './lazy/lazy.module#LazyModule'}
     ]),

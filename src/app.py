@@ -1178,7 +1178,22 @@ def HandleApiServices(api_services):
         api_service_options = list(api_service.values())[0]
         if(api_service_options['type']=='dotnet_web_api'):
             HandleDotnetApiService(api_service_options)
+def HandleAngular6SsrAuth(client_options, copy_folder):
+    return 0
+def HandleAngular6SsrClient(client_options):
+    CamelCaseName = to_camelcase(client_options['name'])
+    template_folder = os.path.join(clientsPath,'angular','cli_6_ssr')
+    copy_folder = os.path.join(srcDir,'Clients',CamelCaseName )
+    copy_tree(template_folder,copy_folder)
 
+    HandleAngular6SsrAuth(client_options,copy_folder)
+
+def HandleClients(clients):
+    print ('Scaffolding Clients')
+    for client in clients:
+        client_options = list(api_service.values())[0]
+        if(client_options['type']=='angular_cli_6_ssr'):
+            HandleAngular6SsrClient(client_options)  
 print('Enter a command')
 print('To get help, enter `help`.')
 while True:
@@ -1215,6 +1230,10 @@ while True:
                 # Create and configure api_serviecs
                 if('api_services' in projectOptions):
                     HandleApiServices(projectOptions['api_services'])
+                # Create and configure clients
+                if('clients' in projectOptions):
+                    HandleClients(projectOptions['clients'])
+
                 docker_compose_path = os.path.join(projectDir,'docker-compose.yml')
                 with open(docker_compose_path, 'w') as yaml_file:
                     yaml.dump(dockerOptions, yaml_file, default_flow_style=False)
