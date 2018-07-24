@@ -105,10 +105,10 @@ api_services:
          - "profile"
          - "email"
          - "foo_api_fullaccess"
-      database: 
-        provider: postgre_name
-        database_name: foo_api_db
-        create_database: true
+      #database: 
+      #  provider: postgre_name
+      #  database_name: foo_api_db
+      #  create_database: true
       cache: # optional
         type: memory # required
       ports: [7000] # optional (random if not set)
@@ -120,11 +120,11 @@ api_services:
       name: MyBarApi
       swagger: true
       database: 
-        provider: postgre_name
+        provider: my_mysql_server
         database_name: bar_api_db
         create_database: true
       cache:
-        type: redis
+        type: redis 
         redis_options: 
           redis_server: my_redis
           redis_instance_name: master

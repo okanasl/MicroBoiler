@@ -1,7 +1,7 @@
 #region (build_dev)
 FROM microsoft/dotnet:2.1-sdk-alpine AS build
 # Set the working directory within the container
-WORKDIR /identityapp
+WORKDIR /src
 
 # Copy all of the source files
 COPY * ./
@@ -11,16 +11,14 @@ RUN dotnet restore ./Host/Host.csproj
 # Build the source code
 RUN dotnet build ./Host/Host.csproj
 
-
 # Ensure that we generate and migrate the database
 RUN chmod +x migrations.sh
 RUN chmod +x updatedb.sh
 RUN sh migrations.sh
 RUN sh updatedb.sh
-
 # Publish application
 WORKDIR ..
-RUN dotnet publish ./identityapp/Host/Host.csproj --output "/dist"
+RUN dotnet publish ./src/Host/Host.csproj --output "/dist"
 
 # Build runtime image
 FROM microsoft/dotnet:2.1-aspnetcore-runtime-alpine AS app

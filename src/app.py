@@ -169,6 +169,8 @@ def HandleCsprojDatabase(service_options, host_csproj_path):
     
     if(database_enabled):
         database_instance = FindDatabaseWithName(service_options['database']['provider'])
+        if database_instance is None:
+            print ('Could not found database with name'+service_options['database']['provider'])
         database_type = database_instance['type']
         with open(os.path.join(host_csproj_path), 'r+') as f:
             filtered = list(filter_sub_region(f, 'database',database_type))
@@ -764,7 +766,7 @@ def HandleIs4ResourcesConfiguration(resources, identity_service, is4_copy_folder
             for secret_index, secret in enumerate(secrets):
                 if(secret_index != 0 ):
                     secret_val  += '\t\t\t\t\t\t'
-                secret_val +='new Secret('+inDbQ(secret)+'.Sha256())'
+                secret_val +='new Secret('+InDbQ(secret)+'.Sha256())'
                 if (secret_count-1 != secret_index):
                     secret_val += ','
                 secret_val += '\n'
@@ -898,7 +900,7 @@ def HandleIs4DockerFile(identity_service, is4_copy_folder):
     docker_file_path = os.path.join(is4_copy_folder,'Dockerfile')
     docker_replace_dict = {}
     docker_replace_dict['{{port}}'] = str(identity_service['ports'][0])
-    replace_tamplate_file(docker_file_path,docker_replace_dict)
+    
 def HandleStartupForIs4(identity_service, is4_copy_folder):
     startup_file_path = os.path.join(is4_copy_folder,'src','Host','Startup.cs')
     program_file_path = os.path.join(is4_copy_folder,'src','Host','Program.cs')
@@ -1031,7 +1033,7 @@ def HandleDotnetApiStartup(dotnet_service, api_copy_folder):
             replaceDict['{{authorization:api_secret}}'] = dotnet_service['authorization']['secrets'][0]
         else:
             # Set Default Secret
-            replaceDict['{{authorization:api_secret}}'] = 'new Secret("secret".Sha256())'
+            replaceDict['{{authorization:api_secret}}'] = 'secret'
 
     replace_tamplate_file(api_startup_path,replaceDict)
 
@@ -1063,7 +1065,18 @@ def HandleDotnetApiDbContext(dotnet_service, api_copy_folder):
         remove_data_folder_path = os.path.join(api_copy_folder,
             'src',
             'Data')
-        os.remove(remove_data_folder_path)
+        shutil.rmtree(remove_data_folder_path)
+        rm_files = ['migrations.sh','updatedb.sh','dropdb.sh']
+        for rm_file in rm_files:
+            rm_path = os.path.join(api_copy_folder,rm_file)
+            os.remove(rm_path)
+        docker_file = os.path.join(api_copy_folder,
+            'Dockerfile')
+        with open(os.path.join(docker_file), 'r+') as f:
+            filtered = list(filter_region(f, 'region (database)', 'end (database)'))
+            f.seek(0)
+            f.writelines(filtered)
+            f.truncate()
 # Change Namespace To Service Name 
 # extensions: Tuple
 def FindAllFilesWithExtensionInDirectory(folder_path, extensions):
