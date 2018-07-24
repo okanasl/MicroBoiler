@@ -1,10 +1,9 @@
 ﻿// Copyright (c) Brock Allen & Dominick Baier. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See LICENSE in the project root for license information.
 
-
+using System;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
-using System;
 using IdentityServer4.Quickstart.UI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.Localization;
@@ -50,34 +49,64 @@ namespace Host
 
         public IServiceProvider ConfigureServices(IServiceCollection services)
         {
-
+            string env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+            //& region (database)
+            string configsConnectionString;  
+            string usersConnectionString; 
+            //& end (database)  
+            //& region (eventbus)
+            //& region (eventbus:rabbitmq)
+            string rabbitHostString;
+            //& end (eventbus:rabbitmq)
+            //& end (eventbus)
+            if (env == "Development")
+            {
+            //& region (database)
+                usersConnectionString = @"{{database:usersconnectionstring-dev}}";
+                configsConnectionString= @"{{database:configsConnectionString-dev}}";  
+            //& end (database)  
+            //& region (eventbus)
+            //& region (eventbus:rabbitmq)
+                rabbitHostString = @"{{rabbitmq:host-dev}}";
+            //& end (eventbus:rabbitmq)
+            //& end (eventbus)
+            }
+            else // if (env == "Docker_Production")
+            {
+            //& region (database)
+                usersConnectionString = @"{{database:usersconnectionstring}}";
+                configsConnectionString= @"{{database:configsConnectionString}}";  
+            //& end (database)  
+            //& region (eventbus)
+            //& region (eventbus:rabbitmq)
+                rabbitHostString = @"{{rabbitmq:host}}";
+            //& end (eventbus:rabbitmq)
+            //& end (eventbus)
+            }
             var migrationsAssembly = typeof(Startup).GetTypeInfo().Assembly.GetName().Name;
             
 //& region (database)
-            const string userconnectionString = @"{{database:usersconnectionstring}}";
-            const string connectionString = @"{{database:configconnectionstring}}";
 //& region (database:mssql)
             services.AddDbContext<UserDbContext>(options =>
-                options.UseSqlServer(userconnectionString,
+                options.UseSqlServer(usersConnectionString,
                     sql => sql.MigrationsAssembly(migrationsAssembly))
                 );
 //& end (database:mssql)
 //& region (database:mysql)
             services.AddDbContext<UserDbContext>(options =>
-                options.UseMySql(userconnectionString,
+                options.UseMySql(usersConnectionString,
                     sql => sql.MigrationsAssembly(migrationsAssembly))
                 );
 //& end (database:mysql)
 //& region (database:postgresql)
             services.AddDbContext<UserDbContext>(options =>
-                options.UseNpgsql(userconnectionString,
+                options.UseNpgsql(usersConnectionString,
                     sql => sql.MigrationsAssembly(migrationsAssembly))
                 );
 //& end (database:postgresql)
 //& end (database)
             services.AddIdentity<ApplicationUser, ApplicationRole>()
-                .AddEntityFrameworkStores<UserDbContext>();
-            
+                .AddEntityFrameworkStores<UserDbContext>();            
             
             services.AddTransient<IEmailSender, AuthMessageSender>();
             services.AddTransient<ISmsSender, AuthMessageSender>();
@@ -101,15 +130,15 @@ namespace Host
                     {
 //& region (database)
 //& region (database:postgresql)
-                        builder.UseNpgsql(connectionString,
+                        builder.UseNpgsql(configsConnectionString,
                             sql => sql.MigrationsAssembly(migrationsAssembly));                    
 //& end (database:postgresql)
 //& region (database:mysql)
-                        builder.UseMySql(connectionString,
+                        builder.UseMySql(configsConnectionString,
                             sql => sql.MigrationsAssembly(migrationsAssembly));                    
 //& end (database:mysql)
 //& region (database:mssql)
-                        builder.UseSqlServer(connectionString,
+                        builder.UseSqlServer(configsConnectionString,
                             sql => sql.MigrationsAssembly(migrationsAssembly));                    
 //& end (database:mssql)
 //& end (database)
@@ -122,15 +151,15 @@ namespace Host
                     {
 //& region (database)
     //& region (database:mssql)
-                        builder.UseSqlServer(connectionString,
+                        builder.UseSqlServer(configsConnectionString,
                             sql => sql.MigrationsAssembly(migrationsAssembly));
 //& end (database:mssql)
 //& region (database:postgresql)
-                        builder.UseNpgsql(connectionString,
+                        builder.UseNpgsql(configsConnectionString,
                             sql => sql.MigrationsAssembly(migrationsAssembly));
 //& end (database:postgresql)
 //& region (database:mysql)
-                        builder.UseMySql(connectionString,
+                        builder.UseMySql(configsConnectionString,
                             sql => sql.MigrationsAssembly(migrationsAssembly));
 //& end (database:mysql)
 //& region (database)
@@ -150,7 +179,7 @@ namespace Host
             });
             services.AddSingleton(provider => Bus.Factory.CreateUsingRabbitMq(cfg =>
             {
-                var host = cfg.Host("{{rabbitmq:host}}", "/", h => {
+                var host = cfg.Host(rabbitHostString, "/", h => {
                     h.Username("{{rabbitmq:user:username}}");
                     h.Password("{{rabbitmq:user:password}}");
                 });
@@ -225,7 +254,8 @@ namespace Host
         }
 
         public void Configure(
-            IApplicationBuilder app, IHostingEnvironment env
+            IApplicationBuilder app,
+            IHostingEnvironment env
 //& region (logging)
             ,ILoggerFactory loggerFactory
 //& end (logging)
@@ -241,8 +271,7 @@ namespace Host
                 app.UseDatabaseErrorPage();
             }
             else
-            {
-                
+            {                
                 app.UseExceptionHandler("/Home/Error");
             }
 //& region (server)

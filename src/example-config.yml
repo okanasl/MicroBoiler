@@ -98,7 +98,8 @@ api_services:
         provider: rabbit_name # required
       authorization: # optional
         issuer: myIdentityService # required
-        api_secret: myIdentityService_secret # optional
+        secrets: 
+          - "myIdentityService_foo_secret"
         avaliable_scopes: # openid, profile , email default values
          - "openid"
          - "profile"
@@ -126,7 +127,7 @@ api_services:
         type: redis
         redis_options: 
           redis_server: my_redis
-          redis_instance_name: my_common_redis_cache
+          redis_instance_name: master
       eventbus: 
         provider: rabbit_name
       ports: [8000]
@@ -135,7 +136,8 @@ api_services:
       logging: serilog
       authorization:
         issuer: myIdentityService
-        secret: myIdentityService_bar_secret
+        secrets: 
+          - "myIdentityService_bar_secret"
         avaliable_scopes:
          - "openid"
          - "profile"

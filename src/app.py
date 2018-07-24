@@ -99,17 +99,33 @@ def Clear_File_Region_Marks(file):
     except StopIteration:
         return
 def BuildDatabaseConnectionString(database_type,server_host,database_name,user,password):
-    
+    conn_string = ""
+    conn_string_dev=""
     if(database_type == "mysql"):
-        return "Server={0};Database={1};Uid={2};Pwd={3};CharSet=utf8mb4;".format(server_host,database_name,user,password)
+        conn_string =  "Server={0};Database={1};Uid={2};Pwd={3};CharSet=utf8mb4;".format(server_host,database_name,user,password)
+        conn_string_dev = "Server={0};Database={1};Uid={2};Pwd={3};CharSet=utf8mb4;".format('localhost:3306',database_name,user,password)
     elif (database_type == 'postgresql'):
-        return "Server={0};Database={1};Username={2};Password={3}".format(server_host,database_name,user,password)
+        conn_string ="Server={0};Database={1};Username={2};Password={3}".format(server_host,database_name,user,password)
+        conn_string_dev = "Server={0};Database={1};Username={2};Password={3}".format('localhost:5432',database_name,user,password)
     elif (database_type == 'mssql'):
-        return "Data Source={0};Initial Catalog={1};User Id={2};Password={3}".format(server_host,database_name,user,password)
+        conn_string = "Data Source={0};Initial Catalog={1};User Id={2};Password={3}".format(server_host,database_name,user,password)
+        conn_string_dev = "Data Source={0};Initial Catalog={1};User Id={2};Password={3}".format('localhost:1433',database_name,user,password)
+    return conn_string, conn_string_dev
 def BuildRedisConnectionString(redis_options):
-    return redis_options['name']
+    return redis_options['name'], '127.0.0.1'
 # end helpers
 # service helpers
+
+def FindClientWithName(name):
+    clients = projectOptions['clients']
+    for client in clients:
+        if list(client.values())[0]['name'] == name:
+            return list(client.values())[0]
+def FindIdentityServiceWithName(name):
+    identity_services = projectOptions['identity_services']
+    for i_s in identity_services:
+        if list(i_s.values())[0]['name'] == name:
+            return list(i_s.values())[0]
 def FindDatabaseWithName(name):
     database_instances = projectOptions['databases']
     for db in database_instances:
@@ -275,6 +291,7 @@ def HandleCSharpEventbus(service_options, sharp_file_path):
 
         if eventbus_instance['type'] == 'rabbitmq':
             eb_replace_dict['{{rabbitmq:host}}'] = eventbus_instance['name']
+            eb_replace_dict['{{rabbitmq:host-dev}}'] = 'rabbitmq://localhost/'
             eb_replace_dict['{{rabbitmq:user:username}}'] = 'doom'
             eb_replace_dict['{{rabbitmq:user:password}}'] = 'machine'
             if 'docker_compose_set' in eventbus_instance:
@@ -739,6 +756,19 @@ def HandleIs4ResourcesConfiguration(resources, identity_service, is4_copy_folder
             .replace('{{resource:displayname}}',resource['name'])
             )
         
+        if 'secrets' in resource['authorization']:
+            print ('Configuring Secrets')
+            secret_val = ''
+            secrets = resource['authorization']['secrets']
+            secret_count = len(secrets)            
+            for secret_index, secret in enumerate(secrets):
+                if(secret_index != 0 ):
+                    secret_val  += '\t\t\t\t\t\t'
+                secret_val +='new Secret('+inDbQ(secret)+'.Sha256())'
+                if (secret_count-1 != secret_index):
+                    secret_val += ','
+                secret_val += '\n'
+            resource_config_as_cs = resource_config_as_cs.replace('{{resource:secrets}}',secret_val)
         if 'avaliable_scopes' in resource['authorization']:
             print ('Configuring Avaliable Scopes...')
             scope_val = ''
@@ -821,17 +851,19 @@ def BuildConnStringForIs4(identity_options):
                     user = database_instance['docker_compose_set']['environment']['POSTGRES_USER']
                 if 'POSTGRES_PASSWORD' in database_instance['docker_compose_set']['environment']:
                     password = database_instance['docker_compose_set']['environment']['POSTGRES_PASSWORD']
-    user_connection_string = BuildDatabaseConnectionString(database_type,database_instance['name'],identity_options['name']+'_users',user,password)        
-    config_connection_string = BuildDatabaseConnectionString(database_type,database_instance['name'],identity_options['name']+'_config',user,password)
-    return user_connection_string, config_connection_string
+    user_connection_string, user_connection_string_dev = BuildDatabaseConnectionString(database_type,database_instance['name'],identity_options['name']+'_users',user,password)        
+    config_connection_string, config_connection_string_dev = BuildDatabaseConnectionString(database_type,database_instance['name'],identity_options['name']+'_config',user,password)
+    return user_connection_string,user_connection_string_dev, config_connection_string,config_connection_string_dev
 def HandleConnectionStringForIs4(identity_options ,is4_copy_folder):
-    userConnString, configConnString =  BuildConnStringForIs4(identity_options)
+    userConnString ,userConnString_dev, configConnString,configConnString_dev =  BuildConnStringForIs4(identity_options)
     startup_file_path = os.path.join(is4_copy_folder,'src','Host','Startup.cs')
     with open(startup_file_path,'r') as cs_file:
         cs_content = cs_file.read()
     os.remove(startup_file_path)
     cs_content = (cs_content
+    .replace('{{database:usersconnectionstring-dev}}', userConnString_dev)
     .replace('{{database:usersconnectionstring}}', userConnString)
+    .replace('{{database:configconnectionstring-dev}}', configConnString_dev)
     .replace('{{database:configconnectionstring}}',configConnString)
     )
     with open(startup_file_path,'w') as cs_file_new:
@@ -841,7 +873,8 @@ def HandleEventBusForIs4(i_srv, is4_copy_folder):
     eventbus_srv = FindEventBusWithName(i_srv['eventbus']['provider'])
     startup_file_path = os.path.join(is4_copy_folder,'src','Host','Startup.cs')
     repleceDict = {
-        '{{rabbitmq:host}}': eventbus_srv['name']
+        '{{rabbitmq:host}}': eventbus_srv['name'],
+        '{{rabbitmq:host-dev}}' : 'rabbitmq://localhost/'
     }
     if 'docker_compose_set' in eventbus_srv:
         if 'environment' in eventbus_srv['docker_compose_set']:
@@ -954,9 +987,9 @@ def BuildConnStringForDotnetApi(dotnet_options):
                     user = database_instance['docker_compose_set']['environment']['POSTGRES_USER']
                 if 'POSTGRES_PASSWORD' in database_instance['docker_compose_set']['environment']:
                     password = database_instance['docker_compose_set']['environment']['POSTGRES_PASSWORD']
-    connection_string = BuildDatabaseConnectionString(database_type,database_instance['name'],dotnet_options['name'],user,password)        
+    connection_string, connection_string_dev = BuildDatabaseConnectionString(database_type,database_instance['name'],dotnet_options['name'],user,password)        
     
-    return connection_string
+    return connection_string , connection_string_dev
 
 def HandleDotnetApiStartup(dotnet_service, api_copy_folder):
     print ('Handle DotnetApi Startup.cs File')
@@ -977,15 +1010,29 @@ def HandleDotnetApiStartup(dotnet_service, api_copy_folder):
     }
     if 'database' in dotnet_service:
         database_instance = FindDatabaseWithName(dotnet_service['database']['provider'])
-        conn_string = BuildConnStringForDotnetApi(dotnet_service)
+        conn_string, conn_string_dev = BuildConnStringForDotnetApi(dotnet_service)
         replaceDict['{{database:connectionString}}'] = conn_string
+        replaceDict['{{database:connectionString-dev}}'] = conn_string_dev
     if 'cache' in dotnet_service:
         if dotnet_service['cache']['type'] == 'redis':
             redis_instance = FindDatabaseWithName(dotnet_service['cache']['redis_options']['redis_server'])
-            redis_conn_string = BuildRedisConnectionString(redis_instance)
+            redis_conn_string, redis_conn_string_dev = BuildRedisConnectionString(redis_instance)
             replaceDict['{{redis_options:connection}}'] = redis_conn_string
-            if 'redis_instance_name' in dotnet_service['cache']['redis_options']['redis_server']:
-                replaceDict['{{redis_options:instance_name}}'] = dotnet_service['cache']['redis_options']['redis_server']['instance_name']
+            replaceDict['{{redis_options:connection-dev}}'] = 'localhost:6379'
+            if 'redis_instance_name' in dotnet_service['cache']['redis_options']:
+                replaceDict['{{redis_options:instance_name}}'] = dotnet_service['cache']['redis_options']['redis_instance_name']
+    if 'authorization' in dotnet_service:
+        issuer = dotnet_service['authorization']['issuer']
+        identity_instance = FindIdentityServiceWithName(issuer)
+        replaceDict['{{authorization:api_name}}'] = dotnet_service['name']        
+        replaceDict['{{authorization:authority}}'] = str.lower(identity_instance['name'])+'.localhost'
+        replaceDict['{{authorization:authority-dev}}'] = 'localhost:'+str(identity_instance['ports'][0])
+        if 'api_secret' in dotnet_service['authorization']:
+            replaceDict['{{authorization:api_secret}}'] = dotnet_service['authorization']['secrets'][0]
+        else:
+            # Set Default Secret
+            replaceDict['{{authorization:api_secret}}'] = 'new Secret("secret".Sha256())'
+
     replace_tamplate_file(api_startup_path,replaceDict)
 
 def HandleDotnetApiProgramFile(dotnet_service, api_copy_folder):

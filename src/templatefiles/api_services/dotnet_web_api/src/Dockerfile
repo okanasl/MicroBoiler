@@ -27,6 +27,7 @@ FROM microsoft/dotnet:2.1-aspnetcore-runtime-alpine AS app
 WORKDIR /app
 COPY --from=build /dist .
 ENV ASPNETCORE_URLS http://+:{{port}}
+ENV ASPNETCORE_ENVIRONMENT Docker_Production
 
 ENTRYPOINT ["dotnet", "{{project_name}}.dll"]
 

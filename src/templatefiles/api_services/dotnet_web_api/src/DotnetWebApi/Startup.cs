@@ -1,5 +1,5 @@
 ﻿
-
+using System;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -54,9 +54,62 @@ namespace DotnetWebApi
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            
+            string env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+            //& region (database)
+            string connectionString;   
+            //& end (database)  
+            //& region (cache)
+            //& region (cache:redis)
+            string redisConnString;
+            //& end (cache:redis)
+            //& end (cache)
+            //& region (authorization)
+            string authConnectionIssuerUrl;            
+            //& end (authorization)
+            //& region (eventbus)
+            //& region (eventbus:rabbitmq)
+            string rabbitHostString;
+            //& end (eventbus:rabbitmq)
+            //& end (eventbus)
+            if (env == "Development")
+            {
+            //& region (database)
+                connectionString= @"{{database:connectionString-dev}}";  
+            //& end (database)  
+            //& region (cache)
+            //& region (cache:redis)
+                redisConnString = @"{{redis_options:connection-dev}}";
+            //& end (cache:redis)
+            //& end (cache)
+            //& region (authorization)
+                authConnectionIssuerUrl= @"{{authorization:authority-dev}}";
+            //& end (authorization)
+            //& region (eventbus)
+            //& region (eventbus:rabbitmq)
+                rabbitHostString = @"{{rabbitmq:host-dev}}";
+            //& end (eventbus:rabbitmq)
+            //& end (eventbus)
+            }
+            else // if (env == "Docker_Production")
+            {
+            //& region (database)
+                connectionString= @"{{database:connectionString}}";  
+            //& end (database)  
+            //& region (cache)
+            //& region (cache:redis)
+                redisConnString = @"{{redis_options:connection}}";
+            //& end (cache:redis)
+            //& end (cache)
+            //& region (authorization)
+                authConnectionIssuerUrl= @"{{authorization:authority}}";
+            //& end (authorization)
+            //& region (eventbus)
+            //& region (eventbus:rabbitmq)
+                rabbitHostString = @"{{rabbitmq:host}}";
+            //& end (eventbus:rabbitmq)
+            //& end (eventbus)
+            }
 //& region (database)
-            string connectionString = "@{{database:connectionString}}";
     //& region (database:mssql)
             services.AddDbContext<NameContext>(options =>
                 options.UseSqlServer(connectionString)
@@ -77,7 +130,7 @@ namespace DotnetWebApi
     //& region (cache:redis)
             services.AddDistributedRedisCache(option =>
             {
-                option.Configuration = "@{{redis_options:connection}}";
+                option.Configuration = redisConnString;
                 option.InstanceName = "{{redis_options:instance_name}}";
             });
     //& end (cache:redis)
@@ -100,7 +153,7 @@ namespace DotnetWebApi
             services.AddAuthentication(IdentityServerAuthenticationDefaults.AuthenticationScheme)
                .AddIdentityServerAuthentication(options =>
                {
-                   options.Authority = "{{authorization:authority}}";
+                   options.Authority = authConnectionIssuerUrl;
                    options.ApiName = "{{authorization:api_name}}";
                    options.ApiSecret = "{{authorization:api_secret}}";
                    options.RequireHttpsMetadata = false;
@@ -115,7 +168,7 @@ namespace DotnetWebApi
             });
             services.AddSingleton(provider => Bus.Factory.CreateUsingRabbitMq(cfg =>
             {
-                var host = cfg.Host("localhost", "/", h => {
+                var host = cfg.Host(rabbitHostString, "/", h => {
                     h.Username("{{rabbitmq:user:username}}");
                     h.Password("{{rabbitmq:user:password}}");
                 });

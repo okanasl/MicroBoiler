@@ -4,7 +4,7 @@
                     DisplayName = "{{resource:displayname}}",
                     ApiSecrets =
                     {
-                        new Secret("secret".Sha256())
+                        {{resource:secrets}}                        
                     },
                     UserClaims =
                     {
