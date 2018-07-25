@@ -25,7 +25,7 @@ databasesPath = os.path.join(templatesPath,'databases')
 eventbusPath = os.path.join(templatesPath,'eventbus')
 identityServicesPath = os.path.join(templatesPath,'identity_services')
 
-dockerOptions = {'version' : 3, 'services': {}, 'networks':{'localnet':{'driver':'bridge'}}}
+dockerOptions = {'version' : "3", 'services': {}, 'networks':{'localnet':{'driver':'bridge'}}}
 optionsFilePath = ""
 projectDir = ""
 srcDir = ""
@@ -506,7 +506,7 @@ def HandlePostgreSql(db_options):
     if 'docker_compose_set' in db_options:
         default_postgre_options[db_options['name']].update(db_options['docker_compose_set'])  
 
-    dockerOptions['services'][db_options['name']] = db_options['docker_compose_set']
+    dockerOptions['services'][db_options['name']] = default_postgre_options[db_options['name']]
 
 def HandleMySql(db_options):
     default_mysql_options = {
@@ -527,7 +527,7 @@ def HandleMySql(db_options):
     }
     if 'docker_compose_set' in db_options:
         default_mysql_options[db_options['name']].update(db_options['docker_compose_set'])    
-    dockerOptions['services'][db_options['name']] = default_mysql_options
+    dockerOptions['services'][db_options['name']] = default_mysql_options[db_options['name']]
 
 def FindRedisUsingServiceNames(redis_name):
     services = []
@@ -1220,6 +1220,23 @@ def HandleDockerfileForAngularSsr(client_options, copy_folder):
         '{{PORT}}': str(client_options['ports'][0])
     }
     replace_template_file(dockerfile_path,replace_dict)
+def HandleDockerComposeForAngularSsr(client_options):
+    CamelCaseName = to_camelcase(client_options['name'])
+    docker_options = {
+        client_options['name']:{
+            'image': client_options['name'],
+            'build': {
+                'context': 'src/Clients/'+CamelCaseName,
+                'dockerfile': 'Dockerfile'
+            },
+            'networks': ['localnet'],
+            'ports': []
+        }
+    }
+    if 'ports' in client_options:        
+        for port in client_options['ports']:
+            docker_options['ports'][client_options['name']].append(str(port)+':'+str(port))
+    dockerOptions['services'][client_options['name']] = docker_options[client_options['name']]
 def HandleAngular6SsrAuth(client_options, copy_folder):
     HandleEnvironmentForAuthConfig(client_options, copy_folder)
     HandleDockerfileForAngularSsr(client_options,copy_folder)
