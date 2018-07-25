@@ -37,6 +37,7 @@
     "@nguniversal/module-map-ngfactory-loader": "^6.0.0",
     "angular-auth-oidc-client": "^6.0.2",
     "core-js": "^2.4.1",
+    "js-cookie": "^2.2.0",
     "rxjs": "6.0.0",
     "zone.js": "^0.8.26"
   },
@@ -45,6 +46,7 @@
     "@angular/cli": "6.0.0",
     "@angular/compiler-cli": "6.0.0",
     "@angular/language-service": "6.0.0",
+    "@types/js-cookie": "^2.1.0",
     "@types/node": "^8.0.30",
     "codelyzer": "^4.0.2",
     "cpy-cli": "^1.0.1",

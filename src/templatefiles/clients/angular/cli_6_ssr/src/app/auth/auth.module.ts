@@ -6,10 +6,12 @@ import { OidcConfigService, AuthModule, OpenIDImplicitFlowConfiguration, OidcSec
 import { environment } from '../../environments/environment.prod';
 import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { AuthInterceptor } from './auth.interceptor';
-
+import {AuthStorage} from './auth.storage';
+import { CoreModule } from '../core/core.module';
 
 export function loadConfig(oidcConfigService: OidcConfigService) {
     console.log('GET AUTH CONFIG FROM ENVIRONMENT');
+    // You can fetch it from your api
     return () => environment.authConfig;
   }
 
@@ -17,8 +19,9 @@ export function loadConfig(oidcConfigService: OidcConfigService) {
     declarations: [  LoginComponent ],
     imports: [
         CommonModule,
+        CoreModule.forRoot(),
         HttpClientModule,
-        AuthModule.forRoot()
+        AuthModule.forRoot({ storage: AuthStorage })
     ],
     providers: [
         AuthGuard,
@@ -32,7 +35,7 @@ export function loadConfig(oidcConfigService: OidcConfigService) {
             provide: HTTP_INTERCEPTORS,
             useClass: AuthInterceptor,
             multi: true
-        },
+        }
     ],
 })
 
@@ -43,7 +46,6 @@ export class AuthClModule {
             const config = environment.authConfig;
             const openIDImplicitFlowConfiguration = new OpenIDImplicitFlowConfiguration();
             openIDImplicitFlowConfiguration.stsServer = config.stsServer;
-            openIDImplicitFlowConfiguration.storage = localStorage;
             openIDImplicitFlowConfiguration.redirect_url = config.redirect_url;
             openIDImplicitFlowConfiguration.trigger_authorization_result_event = true;
             // The Client MUST validate that the aud (audience) Claim contains its client_id value registered at the Issuer
@@ -66,7 +68,7 @@ export class AuthClModule {
             openIDImplicitFlowConfiguration.log_console_debug_active = config.log_console_debug_active;
             // id_token C8: The iat Claim can be used to reject tokens that were issued too far away from the current time,
             // limiting the amount of time that nonces need to be stored to prevent attacks.The acceptable range is Client specific.
-            openIDImplicitFlowConfiguration.max_id_token_iat_offset_allowed_in_seconds = 10;
+            openIDImplicitFlowConfiguration.max_id_token_iat_offset_allowed_in_seconds = 20;
         
     
             const authWellKnownEndpoints = new AuthWellKnownEndpoints();

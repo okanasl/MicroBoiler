@@ -1119,6 +1119,16 @@ def HandleDotnetApiDockerFile(dotnet_service, api_copy_folder):
     docker_replace_dict['{{port}}'] = str(dotnet_service['ports'][0])
     docker_replace_dict['{{project_name}}'] = to_camelcase(dotnet_service['name'])
     replace_template_file(docker_file_path,docker_replace_dict)
+    if 'database' in dotnet_service:
+        ef_shell_replace_dict = {
+            '{{ProjectName}}' : to_camelcase(dotnet_service['name']),
+            '{{DatabaseContextName}}' : to_camelcase(dotnet_service['name']) + 'Context'
+        }
+        shell_file_paths = ['migrations.sh','updatedb.sh','dropdb.sh']
+        for path in shell_file_paths:
+            f_path = os.path.join(api_copy_folder,path)
+            replace_template_file(f_path,ef_shell_replace_dict)
+
 def HandleDotnetApiDockerCompose(dotnet_service,api_copy_folder):
     docker_props = {
         'image': dotnet_service['name'],
@@ -1216,15 +1226,23 @@ def HandleEnvironmentForAuthConfig(client_options, copy_folder):
             dev_replace_dict['{{auth:scope}}'] = 'openid profile email'
         replace_template_file(environment_dev_path,dev_replace_dict)
         replace_template_file(environment_prod_path,prod_replace_dict)
+def HandleDockerfileForAngularSsr(client_options, copy_folder):
+    dockerfile_path = os.path.join(copy_folder,'Dockerfile')
+    replace_dict = {
+        '{{PORT}}': str(client_options['ports'][0])
+    }
+    replace_template_file(dockerfile_path,replace_dict)
 def HandleAngular6SsrAuth(client_options, copy_folder):
     HandleEnvironmentForAuthConfig(client_options, copy_folder)
+    HandleDockerfileForAngularSsr(client_options,copy_folder)
 def HandleAngular6SsrClient(client_options):
     CamelCaseName = to_camelcase(client_options['name'])
     template_folder = os.path.join(clientsPath,'angular','cli_6_ssr')
     copy_folder = os.path.join(srcDir,'Clients',CamelCaseName)
     if os.path.isdir(copy_folder):
         shutil.rmtree(copy_folder,ignore_errors=True)
-    shutil.copytree(template_folder,copy_folder,ignore=shutil.ignore_patterns('node_modules*'))
+    shutil.copytree(template_folder,copy_folder)
+    #shutil.copytree(template_folder,copy_folder,ignore=shutil.ignore_patterns('node_modules*'))
     HandleAngular6SsrAuth(client_options,copy_folder)
 
 def HandleClients(clients):

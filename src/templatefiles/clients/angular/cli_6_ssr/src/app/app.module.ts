@@ -1,7 +1,7 @@
 import {BrowserModule} from '@angular/platform-browser';
 import {NgModule} from '@angular/core';
 import {RouterModule} from '@angular/router';
-
+import { CoreModule } from './core/core.module';
 import { AppComponent } from './app.component';
 import { HomeComponent } from './home/home.component';
 import { TransferHttpCacheModule } from '@nguniversal/common';
@@ -16,6 +16,7 @@ import { LoginComponent } from './auth/components/login/login.component';
     HomeComponent,
   ],
   imports: [
+    CoreModule.forRoot(),
 //& region (authorization)
     AuthClModule,
 //& end (authorization)
