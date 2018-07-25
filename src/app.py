@@ -25,7 +25,7 @@ databasesPath = os.path.join(templatesPath,'databases')
 eventbusPath = os.path.join(templatesPath,'eventbus')
 identityServicesPath = os.path.join(templatesPath,'identity_services')
 
-dockerOptions = {'version' : 3, 'services': [], 'networks':[{'localnet':{'driver':'bridge'}}]}
+dockerOptions = {'version' : 3, 'services': {}, 'networks':{'localnet':{'driver':'bridge'}}}
 optionsFilePath = ""
 projectDir = ""
 srcDir = ""
@@ -361,10 +361,7 @@ def AddNginxToDockerOptions(server,api_services, clients,identity_services):
         nginxOptions['links'].append(i_service['name'])
         nginxOptions['depends_on'].append(i_service['name'])
     
-    nginx_docker_obj = {
-        server['name']: nginxOptions
-    }
-    dockerOptions['services'].append(nginx_docker_obj)
+    dockerOptions['services'][server['name']]= nginxOptions
 
 def BuildNginxConfiguration(server, api_services,clients, identity_services):
     print ("Configuring Nginx Server")
@@ -508,10 +505,8 @@ def HandlePostgreSql(db_options):
     }
     if 'docker_compose_set' in db_options:
         default_postgre_options[db_options['name']].update(db_options['docker_compose_set'])  
-    postgre_docker_options = {    
-        db_options['name']:db_options['docker_compose_set']
-    }
-    dockerOptions['services'].append(postgre_docker_options)
+
+    dockerOptions['services'][db_options['name']] = db_options['docker_compose_set']
 
 def HandleMySql(db_options):
     default_mysql_options = {
@@ -532,7 +527,7 @@ def HandleMySql(db_options):
     }
     if 'docker_compose_set' in db_options:
         default_mysql_options[db_options['name']].update(db_options['docker_compose_set'])    
-    dockerOptions['services'].append(default_mysql_options)
+    dockerOptions['services'][db_options['name']] = default_mysql_options
 
 def FindRedisUsingServiceNames(redis_name):
     services = []
@@ -579,10 +574,7 @@ def HandleRedisDatabase(db_options):
     # Add Links So We can use redis instance name to connect it in services
     for service_name in redis_using_services:
         redis_docker_options['links'].append(service_name)
-    redis_docker = {
-        db_options['name']: redis_docker_options
-    }
-    dockerOptions['services'].append(redis_docker)
+    dockerOptions['services'][db_options['name']]= redis_docker_options
 
 def HandleDatabases(databases):
     print ('Configuring Databases')
@@ -631,10 +623,8 @@ def HandleRabbitMq(rabbit_options):
     }
     if 'docker_compose_set' in rabbit_options:
         rabbitmq_docker_options.update(rabbit_options['docker_compose_set'])
-    docker_opts_to_set = {
-        rabbit_options['name']: rabbitmq_docker_options
-    }
-    dockerOptions['services'].append(docker_opts_to_set)
+        
+    dockerOptions['services'][rabbit_options['name']] = rabbitmq_docker_options
 
 def HandleEventBus(eventbuses):
     print ('Configuring Bus Instances..')
@@ -935,17 +925,16 @@ def HandleIs4DockerCompose(identity_service, is4_copy_folder):
         eb_provider = identity_service['eventbus']['provider']        
         is4_docker_props['links'].append(eb_provider)
         is4_docker_props['depends_on'].append(eb_provider)
-    docker_opts_to_set = {
-        identity_service['name']: is4_docker_props
-    }
-    dockerOptions['services'].append(docker_opts_to_set)
+
+    dockerOptions['services'][identity_service['name']]  = is4_docker_props
 def HandleIdentityServer4(identity_service):
     is4_template_folder = os.path.join(identityServicesPath,'identityserver4ef')
     is4_copy_folder = os.path.join(srcDir,'IdentityServices',identity_service['name'])
     if os.path.isdir(is4_copy_folder):
       shutil.rmtree(is4_copy_folder,ignore_errors=True)  
-    shutil.copytree(is4_template_folder,is4_copy_folder,ignore=shutil.ignore_patterns('bin*','obj*'))
-
+    # TODO: Swap shutil operations
+    #shutil.copytree(is4_template_folder,is4_copy_folder,ignore=shutil.ignore_patterns('bin*','obj*'))
+    shutil.copytree(is4_template_folder,is4_copy_folder)
     api_services_using_is4 = FindApiServicesUsesIs4(identity_service['name'])
     clients_using_is4 = FindClientsUsesIs4(identity_service['name'])
 
@@ -1152,18 +1141,17 @@ def HandleDotnetApiDockerCompose(dotnet_service,api_copy_folder):
         eb_provider = dotnet_service['eventbus']['provider']        
         docker_props['links'].append(eb_provider)
         docker_props['depends_on'].append(eb_provider)
-    docker_opts_to_set = {
-        dotnet_service['name']: docker_props
-    }
-    dockerOptions['services'].append(docker_opts_to_set)
+
+    dockerOptions['services'][dotnet_service['name']] = docker_props
 def HandleDotnetApiService(api_service_options):
     CamelCaseName = to_camelcase(api_service_options['name'])
     api_template_folder = os.path.join(apiServicesPath,'dotnet_web_api','src')
     api_copy_folder = os.path.join(srcDir,'ApiServices',CamelCaseName )
     if os.path.isdir(api_copy_folder):
         shutil.rmtree(api_copy_folder,ignore_errors=True)
-    shutil.copytree(api_template_folder,api_copy_folder,ignore=shutil.ignore_patterns('bin*','obj*'))
-    
+    # TODO: Swap shutil operations
+    #shutil.copytree(api_template_folder,api_copy_folder,ignore=shutil.ignore_patterns('bin*','obj*'))
+    shutil.copytree(api_template_folder,api_copy_folder)
     api_src_folder = os.path.join(srcDir,'ApiServices',CamelCaseName,'DotnetWebApi')
     api_src_rename_folder = os.path.join(srcDir,'ApiServices',CamelCaseName,'src')
     api_csproj_folder = os.path.join(srcDir,'ApiServices',CamelCaseName,'src','DotnetWebApi.csproj')
@@ -1211,12 +1199,12 @@ def HandleEnvironmentForAuthConfig(client_options, copy_folder):
         prod_replace_dict = {
             '{{auth:stsServer}}': identity_instance['name'].lower()+'.localhost',
             '{{auth:clientUrl}}': client_options['name'].lower()+'.localhost',
-            '{{auth:client_id}}': identity_instance['name']
+            '{{auth:client_id}}': client_options['name']
         }
         dev_replace_dict = {
             '{{auth:stsServer}}': 'http://localhost:'+str(identity_instance['ports'][0]),
             '{{auth:clientUrl}}': 'http://localhost:'+str(client_options['ports'][0]),
-            '{{auth:client_id}}': identity_instance['name']
+            '{{auth:client_id}}': client_options['name']
         }
         if 'scopes' in client_options['authorization']:
             prod_replace_dict['{{auth:scope}}'] = " ".join(client_options['authorization']['scopes'])
@@ -1241,6 +1229,7 @@ def HandleAngular6SsrClient(client_options):
     copy_folder = os.path.join(srcDir,'Clients',CamelCaseName)
     if os.path.isdir(copy_folder):
         shutil.rmtree(copy_folder,ignore_errors=True)
+    # TODO: Swap shutil operations
     shutil.copytree(template_folder,copy_folder)
     #shutil.copytree(template_folder,copy_folder,ignore=shutil.ignore_patterns('node_modules*'))
     HandleAngular6SsrAuth(client_options,copy_folder)
