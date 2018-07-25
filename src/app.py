@@ -4,7 +4,6 @@ import readline
 import fileinput
 import re
 import shlex
-from distutils.dir_util import copy_tree
 import shutil
 import yaml
 import os
@@ -38,7 +37,7 @@ def InDbQ(value):
 def to_camelcase(s):
     s_val = re.sub(r'(?!^)_([a-zA-Z])', lambda m: m.group(1).upper(), s)
     return s_val[0].upper()+s_val[1:]
-def replace_tamplate_file(filepath,replace_dict):
+def replace_template_file(filepath,replace_dict):
     with open(filepath,'r') as cs_file:
         cs_content = cs_file.read()
     os.remove(filepath)
@@ -46,6 +45,12 @@ def replace_tamplate_file(filepath,replace_dict):
         cs_content = cs_content.replace(key,value)
     with open(filepath,'w') as cs_file_new:
         cs_file_new.write(cs_content)
+def filter_region_with_tag(file,tag):
+    with open(os.path.join(environment_dev_path), 'r+') as f:
+        filtered = list(filter_region(f, 'region ('+tag+')', 'end ('+tag+')'))
+        f.seek(0)
+        f.writelines(filtered)
+        f.truncate()
 def filter_region(file, start_delete_key, stop_delete_key):
     """
     Given a file handle, generate all lines except those between the specified
@@ -300,7 +305,7 @@ def HandleCSharpEventbus(service_options, sharp_file_path):
                 if 'envoronment' in eventbus_instance['docker_compose_set']:
                     eb_replace_dict['{{rabbitmq:user:username}}'] = eventbus_instance['docker_compose_set']['environment']['RABBITMQ_DEFAULT_USER']
                     eb_replace_dict['{{rabbitmq:user:password}}'] = eventbus_instance['docker_compose_set']['environment']['RABBITMQ_DEFAULT_PASSWORD']
-        replace_tamplate_file(sharp_file_path,eb_replace_dict)
+        replace_template_file(sharp_file_path,eb_replace_dict)
         eventbus_type = eventbus_instance['type']
         with open(os.path.join(sharp_file_path), 'r+') as f:
             filtered = list(filter_sub_region(f, 'eventbus',eventbus_type))
@@ -321,7 +326,7 @@ def CreateProjectDirectory(projectName):
     directory = os.path.normpath(os.path.join(scriptPath, optionsFilePath,'../'))
     projectDir = os.path.normpath(os.path.join(directory, projectName))
     srcDir = os.path.normpath(os.path.join(projectDir,"src"))
-    if not os.path.exists(srcDir):
+    if not os.path.isdir(srcDir):
         os.makedirs(srcDir)
     # Create README.md
     f = open(os.path.normpath(os.path.join(projectDir,'README.md')), 'w+')
@@ -474,9 +479,9 @@ def HandleServers(servers):
             nginxTemplateFolder = os.path.join(serversPath,'nginx')
             folderPath = os.path.normpath(os.path.join(projectDir, server_options['name']))
             nginxPath = os.path.join(folderPath,'nginx.conf')
-            if not os.path.exists(folderPath):
-                os.makedirs(folderPath)
-            copy_tree(nginxTemplateFolder,folderPath)
+            if os.path.isdir(folderPath):
+                shutil.rmtree(folderPath, ignore_errors=True)
+            shutil.copytree(nginxTemplateFolder,folderPath)
             api_services_uses_nginx = FindApiServicesUsesNginx(server_options['name'])
             clients_uses_nginx = FindClientsUsesNginx(server_options['name'])
             identity_uses_nginx = FindIdentityServicesUsesNginx(server_options['name'])
@@ -547,10 +552,10 @@ def FindRedisUsingServiceNames(redis_name):
 def HandleRedisDatabase(db_options):
     redis_template_folder = os.path.join(databasesPath,'redis')
     redis_project_folder = os.path.join(projectDir, db_options['name'])
-    if not os.path.exists(redis_project_folder):
-        os.makedirs(redis_project_folder)
+    if os.path.isdir(redis_project_folder):
+        shutil.rmtree(redis_project_folder,ignore_errors=True)
     #Copy template (config and Dockerfile)
-    copy_tree(redis_template_folder,redis_project_folder)
+    shutil.copytree(redis_template_folder,redis_project_folder)
     redis_docker_options = {
         'image': db_options['name'],
         'build': {
@@ -894,7 +899,7 @@ def HandleEventBusForIs4(i_srv, is4_copy_folder):
     else:
         repleceDict['{{rabbitmq:user:username}}'] = 'doom'
         repleceDict['{{rabbitmq:user:password}}'] = 'machine'
-    replace_tamplate_file(startup_file_path, repleceDict)
+    replace_template_file(startup_file_path, repleceDict)
 
 def HandleIs4DockerFile(identity_service, is4_copy_folder):
     docker_file_path = os.path.join(is4_copy_folder,'Dockerfile')
@@ -937,7 +942,9 @@ def HandleIs4DockerCompose(identity_service, is4_copy_folder):
 def HandleIdentityServer4(identity_service):
     is4_template_folder = os.path.join(identityServicesPath,'identityserver4ef')
     is4_copy_folder = os.path.join(srcDir,'IdentityServices',identity_service['name'])
-    copy_tree(is4_template_folder,is4_copy_folder)
+    if os.path.isdir(is4_copy_folder):
+      shutil.rmtree(is4_copy_folder,ignore_errors=True)  
+    shutil.copytree(is4_template_folder,is4_copy_folder,ignore=shutil.ignore_patterns('bin*','obj*'))
 
     api_services_using_is4 = FindApiServicesUsesIs4(identity_service['name'])
     clients_using_is4 = FindClientsUsesIs4(identity_service['name'])
@@ -1035,7 +1042,7 @@ def HandleDotnetApiStartup(dotnet_service, api_copy_folder):
             # Set Default Secret
             replaceDict['{{authorization:api_secret}}'] = 'secret'
 
-    replace_tamplate_file(api_startup_path,replaceDict)
+    replace_template_file(api_startup_path,replaceDict)
 
 def HandleDotnetApiProgramFile(dotnet_service, api_copy_folder):
     api_program_path = os.path.join(api_copy_folder,
@@ -1060,7 +1067,7 @@ def HandleDotnetApiDbContext(dotnet_service, api_copy_folder):
             replaceDict = {
                 'NameContext': CamelCaseDbName
             }
-            replace_tamplate_file(dbcontext_rename_path,replaceDict)
+            replace_template_file(dbcontext_rename_path,replaceDict)
     else:
         remove_data_folder_path = os.path.join(api_copy_folder,
             'src',
@@ -1091,7 +1098,7 @@ def ReplaceDotnetNameSpaces(file_paths, namespace_name, replace_name):
     replace_dict[namespace_name] = replace_name
     for file in file_paths:
         if os.path.exists(file):
-            replace_tamplate_file(file,replace_dict)
+            replace_template_file(file,replace_dict)
 def ClearRegionLines(file_paths):
     for file in file_paths:        
         with open(os.path.join(file), 'r+') as f:
@@ -1111,7 +1118,7 @@ def HandleDotnetApiDockerFile(dotnet_service, api_copy_folder):
     docker_replace_dict = {}
     docker_replace_dict['{{port}}'] = str(dotnet_service['ports'][0])
     docker_replace_dict['{{project_name}}'] = to_camelcase(dotnet_service['name'])
-    replace_tamplate_file(docker_file_path,docker_replace_dict)
+    replace_template_file(docker_file_path,docker_replace_dict)
 def HandleDotnetApiDockerCompose(dotnet_service,api_copy_folder):
     docker_props = {
         'image': dotnet_service['name'],
@@ -1143,14 +1150,16 @@ def HandleDotnetApiService(api_service_options):
     CamelCaseName = to_camelcase(api_service_options['name'])
     api_template_folder = os.path.join(apiServicesPath,'dotnet_web_api','src')
     api_copy_folder = os.path.join(srcDir,'ApiServices',CamelCaseName )
-    copy_tree(api_template_folder,api_copy_folder)
+    if os.path.isdir(api_copy_folder):
+        shutil.rmtree(api_copy_folder,ignore_errors=True)
+    shutil.copytree(api_template_folder,api_copy_folder,ignore=shutil.ignore_patterns('bin*','obj*'))
     
     api_src_folder = os.path.join(srcDir,'ApiServices',CamelCaseName,'DotnetWebApi')
     api_src_rename_folder = os.path.join(srcDir,'ApiServices',CamelCaseName,'src')
     api_csproj_folder = os.path.join(srcDir,'ApiServices',CamelCaseName,'src','DotnetWebApi.csproj')
     api_csproj_rename_folder = os.path.join(srcDir,'ApiServices',CamelCaseName,'src',CamelCaseName+'.csproj')
     
-    if not os.path.exists(api_src_rename_folder):
+    if not os.path.isdir(api_src_rename_folder):
         shutil.copytree(api_src_folder,api_src_rename_folder)
         shutil.rmtree( api_src_folder,ignore_errors=True)
     else: 
@@ -1178,20 +1187,50 @@ def HandleApiServices(api_services):
         api_service_options = list(api_service.values())[0]
         if(api_service_options['type']=='dotnet_web_api'):
             HandleDotnetApiService(api_service_options)
+def HandleEnvironmentForAuthConfig(client_options, copy_folder):
+    
+    environment_dev_path = os.path.join(copy_folder,'src','environments','environment.ts')
+    environment_prod_path = os.path.join(copy_folder,'src','environments','environment.prod.ts')
+    # filter if auth not added
+    if 'authorization' not in client_options:    
+        filter_region_with_tag(environment_dev_path,'authorization')
+        filter_region_with_tag(environment_prod_path,'authorization')
+    else:
+        identity_instance = FindIdentityServiceWithName(client_options['authorization']['issuer'])
+        identity_type = identity_instance['type']
+        prod_replace_dict = {
+            '{{auth:stsServer}}': identity_instance['name'].lower()+'.localhost',
+            '{{auth:clientUrl}}': client_options['name'].lower()+'.localhost',
+            '{{auth:client_id}}': identity_instance['name']
+        }
+        dev_replace_dict = {
+            '{{auth:stsServer}}': 'localhost:'+str(identity_instance['ports'][0]),
+            '{{auth:clientUrl}}': 'localhost:'+str(client_options['ports'][0]),
+            '{{auth:client_id}}': identity_instance['name']
+        }
+        if 'scopes' in client_options['authorization']:
+            prod_replace_dict['{{auth:scope}}'] = " ".join(client_options['authorization']['scopes'])
+            dev_replace_dict['{{auth:scope}}'] = " ".join(client_options['authorization']['scopes'])
+        else:
+            prod_replace_dict['{{auth:scope}}'] = 'openid profile email' # default scope values
+            dev_replace_dict['{{auth:scope}}'] = 'openid profile email'
+        replace_template_file(environment_dev_path,dev_replace_dict)
+        replace_template_file(environment_prod_path,prod_replace_dict)
 def HandleAngular6SsrAuth(client_options, copy_folder):
-    return 0
+    HandleEnvironmentForAuthConfig(client_options, copy_folder)
 def HandleAngular6SsrClient(client_options):
     CamelCaseName = to_camelcase(client_options['name'])
     template_folder = os.path.join(clientsPath,'angular','cli_6_ssr')
-    copy_folder = os.path.join(srcDir,'Clients',CamelCaseName )
-    copy_tree(template_folder,copy_folder)
-
+    copy_folder = os.path.join(srcDir,'Clients',CamelCaseName)
+    if os.path.isdir(copy_folder):
+        shutil.rmtree(copy_folder,ignore_errors=True)
+    shutil.copytree(template_folder,copy_folder,ignore=shutil.ignore_patterns('node_modules*'))
     HandleAngular6SsrAuth(client_options,copy_folder)
 
 def HandleClients(clients):
     print ('Scaffolding Clients')
     for client in clients:
-        client_options = list(api_service.values())[0]
+        client_options = list(client.values())[0]
         if(client_options['type']=='angular_cli_6_ssr'):
             HandleAngular6SsrClient(client_options)  
 print('Enter a command')

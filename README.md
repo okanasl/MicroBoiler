@@ -20,9 +20,9 @@ A microservice architecture generator.
 - [ ] Mssql
 - [ ] MongoDB
 ### Web/Mobile Clients
+- [ ] Angular Client
+- [x] Angular Client (Universal)
 - [ ] React Web Client
 - [ ] React Native Client
-- [ ] Angular Client
-- [ ] Angular Client (Universal)
 - [ ] Ionic 3 Client
 - [ ] VueJs Client
