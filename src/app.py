@@ -1035,7 +1035,7 @@ def HandleDotnetApiStartup(dotnet_service, api_copy_folder):
         identity_instance = FindIdentityServiceWithName(issuer)
         replaceDict['{{authorization:api_name}}'] = dotnet_service['name']        
         replaceDict['{{authorization:authority}}'] = str.lower(identity_instance['name'])+'.localhost'
-        replaceDict['{{authorization:authority-dev}}'] = 'localhost:'+str(identity_instance['ports'][0])
+        replaceDict['{{authorization:authority-dev}}'] = 'http://localhost:'+str(identity_instance['ports'][0])
         if 'api_secret' in dotnet_service['authorization']:
             replaceDict['{{authorization:api_secret}}'] = dotnet_service['authorization']['secrets'][0]
         else:
@@ -1204,8 +1204,8 @@ def HandleEnvironmentForAuthConfig(client_options, copy_folder):
             '{{auth:client_id}}': identity_instance['name']
         }
         dev_replace_dict = {
-            '{{auth:stsServer}}': 'localhost:'+str(identity_instance['ports'][0]),
-            '{{auth:clientUrl}}': 'localhost:'+str(client_options['ports'][0]),
+            '{{auth:stsServer}}': 'http://localhost:'+str(identity_instance['ports'][0]),
+            '{{auth:clientUrl}}': 'http://localhost:'+str(client_options['ports'][0]),
             '{{auth:client_id}}': identity_instance['name']
         }
         if 'scopes' in client_options['authorization']:
