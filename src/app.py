@@ -25,7 +25,7 @@ databasesPath = os.path.join(templatesPath,'databases')
 eventbusPath = os.path.join(templatesPath,'eventbus')
 identityServicesPath = os.path.join(templatesPath,'identity_services')
 
-dockerOptions = {'version' : "3", 'services': {}, 'networks':{'localnet':{'driver':'bridge'}}}
+dockerOptions = {'version' : "3", 'services': {},'volumes':{} ,'networks':{'localnet':{'driver':'bridge'}}}
 optionsFilePath = ""
 projectDir = ""
 srcDir = ""
@@ -46,7 +46,7 @@ def replace_template_file(filepath,replace_dict):
     with open(filepath,'w') as cs_file_new:
         cs_file_new.write(cs_content)
 def filter_region_with_tag(file,tag):
-    with open(os.path.join(environment_dev_path), 'r+') as f:
+    with open(file, 'r+') as f:
         filtered = list(filter_region(f, 'region ('+tag+')', 'end ('+tag+')'))
         f.seek(0)
         f.writelines(filtered)
@@ -298,7 +298,7 @@ def HandleCSharpEventbus(service_options, sharp_file_path):
 
         if eventbus_instance['type'] == 'rabbitmq':
             eb_replace_dict['{{rabbitmq:host}}'] = eventbus_instance['name']
-            eb_replace_dict['{{rabbitmq:host-dev}}'] = 'rabbitmq://localhost/'
+            eb_replace_dict['{{rabbitmq:host-dev}}'] = 'localhost'
             eb_replace_dict['{{rabbitmq:user:username}}'] = 'doom'
             eb_replace_dict['{{rabbitmq:user:password}}'] = 'machine'
             if 'docker_compose_set' in eventbus_instance:
@@ -326,8 +326,11 @@ def CreateProjectDirectory(projectName):
     directory = os.path.normpath(os.path.join(scriptPath, optionsFilePath,'../'))
     projectDir = os.path.normpath(os.path.join(directory, projectName))
     srcDir = os.path.normpath(os.path.join(projectDir,"src"))
+    docker_volume_dir = os.path.normpath(os.path.join(projectDir,"docker_volumes"))
     if not os.path.isdir(srcDir):
         os.makedirs(srcDir)
+    if not os.path.isdir(docker_volume_dir):
+        os.makedirs(docker_volume_dir)
     # Create README.md
     f = open(os.path.normpath(os.path.join(projectDir,'README.md')), 'w+')
     f.write('#'+projectName)
@@ -338,7 +341,7 @@ def CreateProjectDirectory(projectName):
 def AddNginxToDockerOptions(server,api_services, clients,identity_services):
     nginxOptions = {        
             'image': 'nginxhttp',
-            'container_name': server['name'],
+            'container_name': server['name'].lower(),
             'ports': [],
             'links': [],
             'depends_on':[],
@@ -488,12 +491,16 @@ def HandleServers(servers):
 
 
 
-def HandlePostgreSql(db_options):
+def HandlePostgreSql(db_options):    
+    docker_volume_dir = os.path.normpath(os.path.join(projectDir,'docker_volumes','postgresql',db_options['name']))
+    if not os.path.isdir(docker_volume_dir):
+        os.makedirs(docker_volume_dir)
+    dockerOptions['volumes']['postgres-data'] = {}
     default_postgre_options = {
         db_options['name']:{
             'image': 'postgres',
             'container_name': db_options['name'],
-            'volumes': ['./postgres-data:/var/lib/postgresql/data'],
+            'volumes': ['./postgres-data:./docker_volumes/postgresql/'+db_options['name']],
             'networks':['localnet'],
             'ports': ['5432:5432'],
             'environment': {
@@ -509,12 +516,16 @@ def HandlePostgreSql(db_options):
     dockerOptions['services'][db_options['name']] = default_postgre_options[db_options['name']]
 
 def HandleMySql(db_options):
+    docker_volume_dir = os.path.normpath(os.path.join(projectDir,'docker_volumes','mysql',db_options['name']))
+    if not os.path.isdir(docker_volume_dir):
+        os.makedirs(docker_volume_dir)
+    dockerOptions['volumes']['mysqlvol'] = {}
     default_mysql_options = {
         db_options['name']:{
             'image': 'mysql/mysql-server:5.7',
             'container_name': db_options['name'],
             'command': 'mysqld --user=root --verbose',
-            'volumes': ['mysqlvol:/var/lib/mysql/data'],
+            'volumes': ['mysqlvol:./docker_volumes/mysql/'+db_options['name']],
             'networks':['localnet'],
             'environment': {
                 'MYSQL_USER': '"doom"',
@@ -552,7 +563,7 @@ def HandleRedisDatabase(db_options):
     #Copy template (config and Dockerfile)
     shutil.copytree(redis_template_folder,redis_project_folder)
     redis_docker_options = {
-        'image': db_options['name'],
+        'image': db_options['name'].lower(),
         'build': {
             'context': db_options['name']+'/',
             'dockerfile': 'Dockerfile',
@@ -609,17 +620,21 @@ def FindIdentityServicesUsesRabbitmq(rabbit_name):
 def HandleRabbitMq(rabbit_options):
     rabbit_api_services = FindApiServicesUsesRabbitmq(rabbit_options['name'])
     rabbit_identity_services = FindIdentityServicesUsesRabbitmq(rabbit_options['name'])
+    docker_volume_dir = os.path.normpath(os.path.join(projectDir,'docker_volumes','rabbitmq',rabbit_options['name']))
+    if not os.path.isdir(docker_volume_dir):
+        os.makedirs(docker_volume_dir)
+    dockerOptions['volumes']['rabbit-volume'] = {}
     rabbitmq_docker_options = {
         'image': 'rabbitmq:3-management-alpine',
         'container_name': rabbit_options['name'],
-        'volumes': ['rabbit-volume:/var/lib/rabbitmq'],
+        'volumes': ['rabbit-volume:./docker_volumes/rabbitmq/'+rabbit_options['name']],
         'ports': ['15672:15672','5672:5672','5671:5671'], # Management, Publish And Subsucribe Ports
         'environment': {
             'RABBITMQ_DEFAULT_PASS':'machine',
             'RABBITMQ_DEFAULT_USER' : 'doom',
         },
-        'networks': ['localnet'],
-        'links':rabbit_identity_services + rabbit_api_services # may be unnecessary
+        'networks': ['localnet']
+        # 'links':rabbit_identity_services + rabbit_api_services # may be unnecessary
     }
     if 'docker_compose_set' in rabbit_options:
         rabbitmq_docker_options.update(rabbit_options['docker_compose_set'])
@@ -906,7 +921,7 @@ def HandleStartupForIs4(identity_service, is4_copy_folder):
     HandleCSharpLogging(identity_service,program_file_path)
 def HandleIs4DockerCompose(identity_service, is4_copy_folder):
     is4_docker_props = {
-        'image': identity_service['name'],
+        'image': identity_service['name'].lower(),
         'build': {
             'context': 'src/IdentityServices/'+identity_service['name']+'/',
             'dockerfile': 'Dockerfile'
@@ -1120,7 +1135,7 @@ def HandleDotnetApiDockerFile(dotnet_service, api_copy_folder):
 
 def HandleDotnetApiDockerCompose(dotnet_service,api_copy_folder):
     docker_props = {
-        'image': dotnet_service['name'],
+        'image': dotnet_service['name'].lower(),
         'build': {
             'context': 'src/ApiServices/'+to_camelcase(dotnet_service['name'])+'/',
             'dockerfile': 'Dockerfile'
@@ -1224,7 +1239,7 @@ def HandleDockerComposeForAngularSsr(client_options):
     CamelCaseName = to_camelcase(client_options['name'])
     docker_options = {
         client_options['name']:{
-            'image': client_options['name'],
+            'image': client_options['name'].lower(),
             'build': {
                 'context': 'src/Clients/'+CamelCaseName,
                 'dockerfile': 'Dockerfile'
@@ -1235,11 +1250,12 @@ def HandleDockerComposeForAngularSsr(client_options):
     }
     if 'ports' in client_options:        
         for port in client_options['ports']:
-            docker_options['ports'][client_options['name']].append(str(port)+':'+str(port))
+            docker_options[client_options['name']]['ports'].append(str(port)+':'+str(port))
     dockerOptions['services'][client_options['name']] = docker_options[client_options['name']]
 def HandleAngular6SsrAuth(client_options, copy_folder):
     HandleEnvironmentForAuthConfig(client_options, copy_folder)
     HandleDockerfileForAngularSsr(client_options,copy_folder)
+    HandleDockerComposeForAngularSsr(client_options)
 def HandleAngular6SsrClient(client_options):
     CamelCaseName = to_camelcase(client_options['name'])
     template_folder = os.path.join(clientsPath,'angular','cli_6_ssr')
