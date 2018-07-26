@@ -495,12 +495,12 @@ def HandlePostgreSql(db_options):
     docker_volume_dir = os.path.normpath(os.path.join(projectDir,'docker_volumes','postgresql',db_options['name']))
     if not os.path.isdir(docker_volume_dir):
         os.makedirs(docker_volume_dir)
-    dockerOptions['volumes']['postgres-data'] = {}
+    dockerOptions['volumes']['postgres-volume'] = {}
     default_postgre_options = {
         db_options['name']:{
             'image': 'postgres',
             'container_name': db_options['name'],
-            'volumes': ['./postgres-data:./docker_volumes/postgresql/'+db_options['name']],
+            'volumes': ['postgres-volume:'+docker_volume_dir],
             'networks':['localnet'],
             'ports': ['5432:5432'],
             'environment': {
@@ -519,13 +519,13 @@ def HandleMySql(db_options):
     docker_volume_dir = os.path.normpath(os.path.join(projectDir,'docker_volumes','mysql',db_options['name']))
     if not os.path.isdir(docker_volume_dir):
         os.makedirs(docker_volume_dir)
-    dockerOptions['volumes']['mysqlvol'] = {}
+    dockerOptions['volumes']['mysql-volume'] = {}
     default_mysql_options = {
         db_options['name']:{
             'image': 'mysql/mysql-server:5.7',
             'container_name': db_options['name'],
             'command': 'mysqld --user=root --verbose',
-            'volumes': ['mysqlvol:./docker_volumes/mysql/'+db_options['name']],
+            'volumes': ['mysql-volume:'+docker_volume_dir],
             'networks':['localnet'],
             'environment': {
                 'MYSQL_USER': '"doom"',
@@ -627,7 +627,7 @@ def HandleRabbitMq(rabbit_options):
     rabbitmq_docker_options = {
         'image': 'rabbitmq:3-management-alpine',
         'container_name': rabbit_options['name'],
-        'volumes': ['rabbit-volume:./docker_volumes/rabbitmq/'+rabbit_options['name']],
+        'volumes': ['rabbit-volume:'+docker_volume_dir],
         'ports': ['15672:15672','5672:5672','5671:5671'], # Management, Publish And Subsucribe Ports
         'environment': {
             'RABBITMQ_DEFAULT_PASS':'machine',
