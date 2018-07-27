@@ -1082,7 +1082,7 @@ def HandleDotnetApiDbContext(dotnet_service, api_copy_folder):
             'src',
             'Data')
         shutil.rmtree(remove_data_folder_path)
-        rm_files = ['migrations.sh','updatedb.sh','dropdb.sh']
+        rm_files = ['migrations.sh','updatedb.sh','dropdb.sh','migrations.dev.sh','updatedb.dev.sh','dropdb.dev.sh']
         for rm_file in rm_files:
             rm_path = os.path.join(api_copy_folder,rm_file)
             os.remove(rm_path)
@@ -1133,7 +1133,7 @@ def HandleDotnetApiDockerFile(dotnet_service, api_copy_folder):
             '{{ProjectName}}' : to_camelcase(dotnet_service['name']),
             '{{DatabaseContextName}}' : to_camelcase(dotnet_service['name']) + 'Context'
         }
-        shell_file_paths = ['migrations.sh','updatedb.sh','dropdb.sh']
+        shell_file_paths = ['migrations.sh','updatedb.sh','dropdb.sh','migrations.dev.sh','updatedb.dev.sh','dropdb.dev.sh']
         for path in shell_file_paths:
             f_path = os.path.join(api_copy_folder,path)
             replace_template_file(f_path,ef_shell_replace_dict)
