@@ -1,6 +1,5 @@
 import { PlatformService } from "./services/platform.service";
 import { CookieService } from "./services/cookie.service";
-import { CommonModule } from "@angular/common";
 import { NgModule } from "@angular/core";
 
 const SERVICES = [

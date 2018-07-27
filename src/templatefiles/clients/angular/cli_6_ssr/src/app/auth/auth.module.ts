@@ -3,11 +3,10 @@ import { CommonModule } from '@angular/common';
 import { LoginComponent } from './components/login/login.component';
 import { AuthGuard } from './auth.guard';
 import { OidcConfigService, AuthModule, OpenIDImplicitFlowConfiguration, OidcSecurityService, AuthWellKnownEndpoints } from 'angular-auth-oidc-client';
-import { environment } from '../../environments/environment.prod';
+import { environment } from '../../environments/environment';
 import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { AuthInterceptor } from './auth.interceptor';
 import {AuthStorage} from './auth.storage';
-import { CoreModule } from '../core/core.module';
 
 export function loadConfig(oidcConfigService: OidcConfigService) {
     console.log('GET AUTH CONFIG FROM ENVIRONMENT');
@@ -19,7 +18,6 @@ export function loadConfig(oidcConfigService: OidcConfigService) {
     declarations: [  LoginComponent ],
     imports: [
         CommonModule,
-        CoreModule.forRoot(),
         HttpClientModule,
         AuthModule.forRoot({ storage: AuthStorage })
     ],

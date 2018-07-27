@@ -100,10 +100,7 @@ api_services:
         issuer: myIdentityService # required
         secrets: 
           - "myIdentityService_foo_secret"
-        avaliable_scopes: # openid, profile , email default values
-         - "openid"
-         - "profile"
-         - "email"
+        avaliable_scopes: 
          - "foo_api_fullaccess"
       #database: 
       #  provider: postgre_name
@@ -139,9 +136,6 @@ api_services:
         secrets: 
           - "myIdentityService_bar_secret"
         avaliable_scopes:
-         - "openid"
-         - "profile"
-         - "email"
          - "bar_api_read"
          - "bar_api_write"
          - "bar_api_fullaccess"

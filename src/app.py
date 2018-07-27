@@ -108,13 +108,13 @@ def BuildDatabaseConnectionString(database_type,server_host,database_name,user,p
     conn_string_dev=""
     if(database_type == "mysql"):
         conn_string =  "Server={0};Database={1};Uid={2};Pwd={3};CharSet=utf8mb4;".format(server_host,database_name,user,password)
-        conn_string_dev = "Server={0};Database={1};Uid={2};Pwd={3};CharSet=utf8mb4;".format('localhost:3306',database_name,user,password)
+        conn_string_dev = "Server={0};Database={1};Uid={2};Pwd={3};CharSet=utf8mb4;".format('localhost',database_name,user,password)
     elif (database_type == 'postgresql'):
         conn_string ="Server={0};Database={1};Username={2};Password={3}".format(server_host,database_name,user,password)
-        conn_string_dev = "Server={0};Database={1};Username={2};Password={3}".format('localhost:5432',database_name,user,password)
+        conn_string_dev = "Server={0};Database={1};Username={2};Password={3}".format('localhost',database_name,user,password)
     elif (database_type == 'mssql'):
         conn_string = "Data Source={0};Initial Catalog={1};User Id={2};Password={3}".format(server_host,database_name,user,password)
-        conn_string_dev = "Data Source={0};Initial Catalog={1};User Id={2};Password={3}".format('localhost:1433',database_name,user,password)
+        conn_string_dev = "Data Source={0};Initial Catalog={1};User Id={2};Password={3}".format('localhost',database_name,user,password)
     return conn_string, conn_string_dev
 def BuildRedisConnectionString(redis_options):
     return redis_options['name'], '127.0.0.1'
@@ -865,22 +865,22 @@ def BuildConnStringForIs4(identity_options):
                     password = database_instance['docker_compose_set']['environment']['POSTGRES_PASSWORD']
     user_connection_string, user_connection_string_dev = BuildDatabaseConnectionString(database_type,database_instance['name'],identity_options['name']+'_users',user,password)        
     config_connection_string, config_connection_string_dev = BuildDatabaseConnectionString(database_type,database_instance['name'],identity_options['name']+'_config',user,password)
-    return user_connection_string,user_connection_string_dev, config_connection_string,config_connection_string_dev
+    conn_strings = {}
+    conn_strings['user_connection_string'] =user_connection_string
+    conn_strings['user_connection_string_dev'] =user_connection_string_dev
+    conn_strings['config_connection_string'] =config_connection_string
+    conn_strings['config_connection_string_dev'] =config_connection_string_dev
+    return conn_strings
 def HandleConnectionStringForIs4(identity_options ,is4_copy_folder):
-    userConnString ,userConnString_dev, configConnString,configConnString_dev =  BuildConnStringForIs4(identity_options)
+    conn_strings =  BuildConnStringForIs4(identity_options)
     startup_file_path = os.path.join(is4_copy_folder,'src','Host','Startup.cs')
-    with open(startup_file_path,'r') as cs_file:
-        cs_content = cs_file.read()
-    os.remove(startup_file_path)
-    cs_content = (cs_content
-    .replace('{{database:usersconnectionstring-dev}}', userConnString_dev)
-    .replace('{{database:usersconnectionstring}}', userConnString)
-    .replace('{{database:configconnectionstring-dev}}', configConnString_dev)
-    .replace('{{database:configconnectionstring}}',configConnString)
-    )
-    with open(startup_file_path,'w') as cs_file_new:
-        cs_file_new.write(cs_content)
-
+    replace_dict = {
+        '{{database:usersconnectionstring-dev}}':conn_strings['user_connection_string_dev'],
+        '{{database:usersconnectionstring}}': conn_strings['user_connection_string'],
+        '{{database:configsConnectionString-dev}}': conn_strings['config_connection_string_dev'],
+        '{{database:configsConnectionString}}': conn_strings['config_connection_string']
+    }
+    replace_template_file(startup_file_path,replace_dict)
 def HandleEventBusForIs4(i_srv, is4_copy_folder):
     eventbus_srv = FindEventBusWithName(i_srv['eventbus']['provider'])
     startup_file_path = os.path.join(is4_copy_folder,'src','Host','Startup.cs')
@@ -942,6 +942,10 @@ def HandleIs4DockerCompose(identity_service, is4_copy_folder):
         is4_docker_props['depends_on'].append(eb_provider)
 
     dockerOptions['services'][identity_service['name']]  = is4_docker_props
+def HandleIs4Cleaning(copy_folder):
+    src_path = os.path.join(copy_folder)
+    file_clean_paths = FindAllFilesWithExtensionInDirectory(src_path,('.cs','.csproj'))
+    ClearRegionLines(file_clean_paths)
 def HandleIdentityServer4(identity_service):
     is4_template_folder = os.path.join(identityServicesPath,'identityserver4ef')
     is4_copy_folder = os.path.join(srcDir,'IdentityServices',identity_service['name'])
@@ -950,6 +954,7 @@ def HandleIdentityServer4(identity_service):
     # TODO: Swap shutil operations
     #shutil.copytree(is4_template_folder,is4_copy_folder,ignore=shutil.ignore_patterns('bin*','obj*'))
     shutil.copytree(is4_template_folder,is4_copy_folder)
+    
     api_services_using_is4 = FindApiServicesUsesIs4(identity_service['name'])
     clients_using_is4 = FindClientsUsesIs4(identity_service['name'])
 
@@ -962,7 +967,7 @@ def HandleIdentityServer4(identity_service):
     HandleIs4DockerFile(identity_service, is4_copy_folder)
     HandleIs4DockerCompose(identity_service, is4_copy_folder)
     HandleStartupForIs4(identity_service, is4_copy_folder)
-
+    HandleIs4Cleaning(is4_copy_folder)
     
 def HandleIdentityServices(identity_services):
     print ('Scaffolding Identity Services...')
@@ -1262,9 +1267,9 @@ def HandleAngular6SsrClient(client_options):
     copy_folder = os.path.join(srcDir,'Clients',CamelCaseName)
     if os.path.isdir(copy_folder):
         shutil.rmtree(copy_folder,ignore_errors=True)
-    # TODO: Swap shutil operations
-    shutil.copytree(template_folder,copy_folder)
-    #shutil.copytree(template_folder,copy_folder,ignore=shutil.ignore_patterns('node_modules*'))
+    # TODO: Ignore Node MOdules in prod 
+    # shutil.copytree(template_folder,copy_folder)
+    shutil.copytree(template_folder,copy_folder,ignore=shutil.ignore_patterns('node_modules*'))
     HandleAngular6SsrAuth(client_options,copy_folder)
 
 def HandleClients(clients):
@@ -1316,6 +1321,10 @@ while True:
                 docker_compose_path = os.path.join(projectDir,'docker-compose.yml')
                 with open(docker_compose_path, 'w') as yaml_file:
                     yaml.dump(dockerOptions, yaml_file, default_flow_style=False)
+                print('!! IN case you generated .NET Core Services')
+                print ('Do not forget to set evironment variable ASPNETCORE_DEVELOPMENT To Development')
+                              
+                
             except yaml.YAMLError as exc:
                 print('Error parsing yml document')
                 print(exc)
