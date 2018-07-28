@@ -886,7 +886,7 @@ def HandleEventBusForIs4(i_srv, is4_copy_folder):
     startup_file_path = os.path.join(is4_copy_folder,'src','Host','Startup.cs')
     repleceDict = {
         '{{rabbitmq:host}}': eventbus_srv['name'],
-        '{{rabbitmq:host-dev}}' : 'rabbitmq://localhost/'
+        '{{rabbitmq:host-dev}}' : 'localhost'
     }
     if 'docker_compose_set' in eventbus_srv:
         if 'environment' in eventbus_srv['docker_compose_set']:
