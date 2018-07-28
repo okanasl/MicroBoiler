@@ -26,6 +26,6 @@ WORKDIR /app
 COPY --from=build /dist .
 ENV ASPNETCORE_URLS http://+:{{port}}
 ENV ASPNETCORE_ENVIRONMENT Docker_Production
-ENTRYPOINT ["dotnet", "Host.dll"]
+ENTRYPOINT ["dotnet", "Host.dll", "/seed"]
 
 #endregion

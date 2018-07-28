@@ -74,19 +74,19 @@ namespace DotnetWebApi
             if (env == "Development")
             {
             //& region (database)
-                connectionString= @"{{database:connectionString-dev}}";  
+                connectionString= "{{database:connectionString-dev}}";  
             //& end (database)  
             //& region (cache)
             //& region (cache:redis)
-                redisConnString = @"{{redis_options:connection-dev}}";
+                redisConnString = "{{redis_options:connection-dev}}";
             //& end (cache:redis)
             //& end (cache)
             //& region (authorization)
-                authConnectionIssuerUrl= @"{{authorization:authority-dev}}";
+                authConnectionIssuerUrl= "{{authorization:authority-dev}}";
             //& end (authorization)
             //& region (eventbus)
             //& region (eventbus:rabbitmq)
-                rabbitHostString = @"{{rabbitmq:host-dev}}";
+                rabbitHostString = "{{rabbitmq:host-dev}}";
             //& end (eventbus:rabbitmq)
             //& end (eventbus)
             }
@@ -97,15 +97,15 @@ namespace DotnetWebApi
             //& end (database)  
             //& region (cache)
             //& region (cache:redis)
-                redisConnString = @"{{redis_options:connection}}";
+                redisConnString = "{{redis_options:connection}}";
             //& end (cache:redis)
             //& end (cache)
             //& region (authorization)
-                authConnectionIssuerUrl= @"{{authorization:authority}}";
+                authConnectionIssuerUrl= "{{authorization:authority}}";
             //& end (authorization)
             //& region (eventbus)
             //& region (eventbus:rabbitmq)
-                rabbitHostString = @"{{rabbitmq:host}}";
+                rabbitHostString = "{{rabbitmq:host}}";
             //& end (eventbus:rabbitmq)
             //& end (eventbus)
             }
@@ -168,7 +168,7 @@ namespace DotnetWebApi
             });
             services.AddSingleton(provider => Bus.Factory.CreateUsingRabbitMq(cfg =>
             {
-                var host = cfg.Host(rabbitHostString, "/", h => {
+                var host = cfg.Host(new Uri(rabbitHostString), "/", h => {
                     h.Username("{{rabbitmq:user:username}}");
                     h.Password("{{rabbitmq:user:password}}");
                 });

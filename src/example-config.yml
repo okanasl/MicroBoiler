@@ -13,9 +13,9 @@ servers:
       name : myNginxServer # required
       ports: [80,443] # Default HTTP and HTTPS ports
       config: # example (default) config 
-        worker-processes: '1'
+        worker_processes: '1'
         events:
-          worker-connections: '1024'
+          worker_connections: '1024'
         http:
           gzip: 'on'
           gzip_http_version: '1.0'
@@ -90,28 +90,28 @@ identity_services:
       database: # required
         provider: postgre_name # required
 api_services: 
-   - foo_api:
-      type: dotnet_web_api
-      name: myFooApi
-      swagger: false
-      eventbus: # optional
-        provider: rabbit_name # required
-      authorization: # optional
-        issuer: myIdentityService # required
-        secrets: 
-          - "myIdentityService_foo_secret"
-        avaliable_scopes: 
-         - "foo_api_fullaccess"
-      #database: 
-      #  provider: postgre_name
-      #  database_name: foo_api_db
-      #  create_database: true
-      cache: # optional
-        type: memory # required
-      ports: [7000] # optional (random if not set)
-      server: 
-        provider: myNginxServer # optional
-      logging: serilog
+  # - foo_api:
+  #    type: dotnet_web_api
+  #    name: myFooApi
+  #    swagger: false
+  #    eventbus: # optional
+  #      provider: rabbit_name # required
+  #    authorization: # optional
+  #      issuer: myIdentityService # required
+  #      secrets: 
+  #        - "myIdentityService_foo_secret"
+  #      avaliable_scopes: 
+  #       - "foo_api_fullaccess"
+  #    #database: 
+  #    #  provider: postgre_name
+  #    #  database_name: foo_api_db
+  #    #  create_database: true
+  #    cache: # optional
+  #      type: memory # required
+  #    ports: [7000] # optional (random if not set)
+  #    server: 
+  #      provider: myNginxServer # optional
+  #    logging: serilog
    - bar_api:
       type: dotnet_web_api
       name: MyBarApi

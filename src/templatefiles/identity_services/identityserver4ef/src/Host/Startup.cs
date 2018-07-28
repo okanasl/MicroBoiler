@@ -62,24 +62,24 @@ namespace Host
             if (env == "Development")
             {
             //& region (database)
-                usersConnectionString = @"{{database:usersconnectionstring-dev}}";
-                configsConnectionString= @"{{database:configsConnectionString-dev}}";  
+                usersConnectionString = "{{database:usersconnectionstring-dev}}";
+                configsConnectionString= "{{database:configsConnectionString-dev}}";  
             //& end (database)  
             //& region (eventbus)
             //& region (eventbus:rabbitmq)
-                rabbitHostString = @"{{rabbitmq:host-dev}}";
+                rabbitHostString = "{{rabbitmq:host-dev}}";
             //& end (eventbus:rabbitmq)
             //& end (eventbus)
             }
             else // if (env == "Docker_Production")
             {
             //& region (database)
-                usersConnectionString = @"{{database:usersconnectionstring}}";
-                configsConnectionString= @"{{database:configsConnectionString}}";  
+                usersConnectionString = "{{database:usersconnectionstring}}";
+                configsConnectionString= "{{database:configsConnectionString}}";  
             //& end (database)  
             //& region (eventbus)
             //& region (eventbus:rabbitmq)
-                rabbitHostString = @"{{rabbitmq:host}}";
+                rabbitHostString = "{{rabbitmq:host}}";
             //& end (eventbus:rabbitmq)
             //& end (eventbus)
             }
@@ -179,7 +179,7 @@ namespace Host
             });
             services.AddSingleton(provider => Bus.Factory.CreateUsingRabbitMq(cfg =>
             {
-                var host = cfg.Host(rabbitHostString, "/", h => {
+                var host = cfg.Host(new Uri(rabbitHostString), "/", h => {
                     h.Username("{{rabbitmq:user:username}}");
                     h.Password("{{rabbitmq:user:password}}");
                 });

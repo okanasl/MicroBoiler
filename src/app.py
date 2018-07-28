@@ -297,7 +297,7 @@ def HandleCSharpEventbus(service_options, sharp_file_path):
         eventbus_instance = FindEventBusWithName(service_options['eventbus']['provider'])
 
         if eventbus_instance['type'] == 'rabbitmq':
-            eb_replace_dict['{{rabbitmq:host}}'] = eventbus_instance['name']
+            eb_replace_dict['{{rabbitmq:host}}'] = 'rabbitmq://'+eventbus_instance['name']+':5672'
             eb_replace_dict['{{rabbitmq:host-dev}}'] = 'localhost'
             eb_replace_dict['{{rabbitmq:user:username}}'] = 'doom'
             eb_replace_dict['{{rabbitmq:user:password}}'] = 'machine'
@@ -344,6 +344,7 @@ def AddNginxToDockerOptions(server,api_services, clients,identity_services):
             'container_name': server['name'].lower(),
             'ports': [],
             'links': [],
+            'restart': 'on-failure',
             'depends_on':[],
             'networks': ['localnet'],
             'build': {'context': server['name']+'/', 'dockerfile':'Dockerfile'}        
@@ -391,7 +392,7 @@ def BuildNginxConfiguration(server, api_services,clients, identity_services):
             nginx.Key('listen', '80'),
             nginx.Key('server_name', str.lower(api_service['name'])+'.localhost'),
         )
-        proxy_pass = 'http://'+str.lower(api_service['name'])+':'+':'.join(map(str,(api_service['ports'])))+'/'
+        proxy_pass = 'http://'+api_service['name']+':'+':'.join(map(str,(api_service['ports'])))+'/'
         location = nginx.Location(
             '/',
             nginx.Key('proxy_http_version', '1.1'),
@@ -410,7 +411,7 @@ def BuildNginxConfiguration(server, api_services,clients, identity_services):
             nginx.Key('server_name', str.lower(i_service['name'])+'.localhost'),
         )
         #pylint: disable-msg=E1121
-        proxy_pass = 'http://'+str.lower(i_service['name'])+':'+':'.join(map(str,(i_service['ports'])))+'/'
+        proxy_pass = 'http://'+i_service['name']+':'+':'.join(map(str,(i_service['ports'])))+'/'
         location = nginx.Location(
             '/',
             nginx.Key('proxy_http_version', '1.1'),
@@ -429,7 +430,7 @@ def BuildNginxConfiguration(server, api_services,clients, identity_services):
             nginx.Key('server_name', str.lower(client['name'])+'.localhost'),
         )
         #pylint: disable-msg=E1121
-        proxy_pass = 'http://'+str.lower(client['name'])+':'+':'.join(map(str,(client['ports'])))+'/'
+        proxy_pass = 'http://'+client['name']+':'+':'.join(map(str,(client['ports'])))+'/'
         location = nginx.Location(
             '/',
             nginx.Key('proxy_http_version', '1.1'),
@@ -570,6 +571,7 @@ def HandleRedisDatabase(db_options):
         },
         'container_name': db_options['name'],
         'ports':[],
+        'restart': 'on-failure',
         'links':[],
         'depends_on':[],
         'networks': ['localnet']
@@ -632,6 +634,12 @@ def HandleRabbitMq(rabbit_options):
         'environment': {
             'RABBITMQ_DEFAULT_PASS':'machine',
             'RABBITMQ_DEFAULT_USER' : 'doom',
+        },
+        'healthcheck':{
+            'test': 'rabbitmq:healtcheck',
+            'interval': '30s',
+            'timeout': '10s',
+            'retries': 5,
         },
         'networks': ['localnet']
         # 'links':rabbit_identity_services + rabbit_api_services # may be unnecessary
@@ -700,7 +708,7 @@ def HandleIs4ClientConfiguration(clients, identity_service, is4_copy_folder):
         cors_origins_val = InDbQ(client_host) +',\n'
 
         grant_type_val = 'GrantTypes.Implicit'
-        if client['type'].startswith('web'):
+        if client['type'].startswith('angular'):
             grant_type_val = 'GrantTypes.Implicit'
         elif client['type'].startswith('native'):
             grant_type_val = 'GrantTypes.ResourceOwnerPassword'
@@ -885,7 +893,7 @@ def HandleEventBusForIs4(i_srv, is4_copy_folder):
     eventbus_srv = FindEventBusWithName(i_srv['eventbus']['provider'])
     startup_file_path = os.path.join(is4_copy_folder,'src','Host','Startup.cs')
     repleceDict = {
-        '{{rabbitmq:host}}': eventbus_srv['name'],
+        '{{rabbitmq:host}}': 'rabbitmq://'+eventbus_srv['name']+':5672',
         '{{rabbitmq:host-dev}}' : 'localhost'
     }
     if 'docker_compose_set' in eventbus_srv:
@@ -926,6 +934,7 @@ def HandleIs4DockerCompose(identity_service, is4_copy_folder):
             'context': 'src/IdentityServices/'+identity_service['name']+'/',
             'dockerfile': 'Dockerfile'
         },
+        'restart': 'on-failure',
         'ports': [],
         'links': [],
         'depends_on':[],
@@ -1145,6 +1154,7 @@ def HandleDotnetApiDockerCompose(dotnet_service,api_copy_folder):
             'context': 'src/ApiServices/'+to_camelcase(dotnet_service['name'])+'/',
             'dockerfile': 'Dockerfile'
         },
+        'restart': 'on-failure',
         'ports': [],
         'links': [],
         'depends_on':[],
@@ -1278,6 +1288,11 @@ def HandleClients(clients):
         client_options = list(client.values())[0]
         if(client_options['type']=='angular_cli_6_ssr'):
             HandleAngular6SsrClient(client_options)  
+def DockerComposeFinalization(file):
+    replace_dict = {
+        'rabbitmq:healtcheck': '["CMD", "curl", "-f", "http://localhost:15672"]'
+    }
+    replace_template_file(file,replace_dict)
 print('Enter a command')
 print('To get help, enter `help`.')
 while True:
@@ -1321,6 +1336,7 @@ while True:
                 docker_compose_path = os.path.join(projectDir,'docker-compose.yml')
                 with open(docker_compose_path, 'w') as yaml_file:
                     yaml.dump(dockerOptions, yaml_file, default_flow_style=False)
+                DockerComposeFinalization(docker_compose_path)
                 print('!! IN case you generated .NET Core Services')
                 print ('Do not forget to set evironment variable ASPNETCORE_DEVELOPMENT To Development')
                               

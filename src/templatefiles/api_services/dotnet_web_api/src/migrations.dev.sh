@@ -1,4 +1,7 @@
 #!/bin/sh
 cd src
-dotnet ef database drop -c {{DatabaseContextName}}
+rm -rf Migrations
+
+dotnet ef migrations add InitialMigrations -c {{DatabaseContextName}} -o Migrations/IdentityServer/UsersDb
+dotnet ef migrations script -c {{DatabaseContextName}} -o Migrations/{{ProjectName}}/{{DatabaseContextName}}.sql
 cd ..
