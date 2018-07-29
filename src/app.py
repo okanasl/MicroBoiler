@@ -527,7 +527,8 @@ def HandleMySql(db_options):
             'container_name': db_options['name'],
             'command': 'mysqld --user=root --verbose',
             'volumes': ['mysql-volume:'+docker_volume_dir],
-            'networks':['localnet'],
+            'networks':['localnet'],            
+            'ports': ['3306:3306'],
             'environment': {
                 'MYSQL_USER': '"doom"',
                 'MYSQL_PASSWORD': '"machine"',
@@ -697,7 +698,6 @@ def HandleIs4ClientConfiguration(clients, identity_service, is4_copy_folder):
     client_count = len(clients)
     for client_ind, client in enumerate(clients):
         client_host = client['name'].lower()+'.localhost'
-
         redirect_url_templ_val = ( InDbQ(client_host) +',\n' 
         + '\t\t\t\t\t\t'+ InDbQ(client_host+'/silent-renew.html') +',\n' 
         + '\t\t\t\t\t\t'+ InDbQ(client_host+'/login-callback.html')) 
@@ -718,6 +718,49 @@ def HandleIs4ClientConfiguration(clients, identity_service, is4_copy_folder):
             template_string 
             .replace('{{client:id}}',client['name']) 
             .replace('{{client:name}}',client['name']) 
+            .replace('{{client:url}}',client_host) 
+            .replace('{{client:accesstokentype}}','AccessTokenType.Reference') 
+            .replace('{{client:redirecturls}}',redirect_url_templ_val) 
+            .replace('{{client:logoutredirecturls}}',post_logout_redirect_url_val)
+            .replace('{{client:corsorigins}}', cors_origins_val)
+            .replace('{{client:granttype}}',grant_type_val)
+            )
+        
+        if 'scopes' in client['authorization']:
+            scope_val = ''
+            scope_options = client['authorization']['scopes']
+            scope_count = len(scope_options)
+            for scope_index, scope in enumerate(scope_options):
+                if(scope_index != 0 ):
+                    scope_val  += '\t\t\t\t\t\t'
+                scope_val += InDbQ(scope)
+                if (scope_count-1 != scope_index):
+                    scope_val += ','
+                scope_val += '\n'
+            client_config_as_cs = client_config_as_cs.replace('{{client:scopes}}',scope_val)
+        client_config_as_cs += ',\n'
+        # Dev configuration
+        client_host = 'localhost:'+str(client['ports'][0])
+        redirect_url_templ_val = ( InDbQ(client_host) +',\n' 
+        + '\t\t\t\t\t\t'+ InDbQ(client_host+'/silent-renew.html') +',\n' 
+        + '\t\t\t\t\t\t'+ InDbQ(client_host+'/login-callback.html')) 
+        
+        post_logout_redirect_url_val = ( InDbQ(client_host) +',\n'
+        + '\t\t\t\t\t\t'+ InDbQ(client_host+'/loggedout'))
+
+        cors_origins_val = InDbQ(client_host) +',\n'
+
+        grant_type_val = 'GrantTypes.Implicit'
+        if client['type'].startswith('angular'):
+            grant_type_val = 'GrantTypes.Implicit'
+        elif client['type'].startswith('native'):
+            grant_type_val = 'GrantTypes.ResourceOwnerPassword'
+        elif client['type'].startswith('mobile'):
+            grant_type_val = 'GrantTypes.ResourceOwnerPassword'
+        client_config_as_cs += (
+            template_string 
+            .replace('{{client:id}}',client['name']+'dev') 
+            .replace('{{client:name}}',client['name']+'dev') 
             .replace('{{client:url}}',client_host) 
             .replace('{{client:accesstokentype}}','AccessTokenType.Reference') 
             .replace('{{client:redirecturls}}',redirect_url_templ_val) 
@@ -918,7 +961,7 @@ def HandleIs4DockerFile(identity_service, is4_copy_folder):
     docker_file_path = os.path.join(is4_copy_folder,'Dockerfile')
     docker_replace_dict = {}
     docker_replace_dict['{{port}}'] = str(identity_service['ports'][0])
-    
+    replace_template_file(docker_file_path,docker_replace_dict)
 def HandleStartupForIs4(identity_service, is4_copy_folder):
     startup_file_path = os.path.join(is4_copy_folder,'src','Host','Startup.cs')
     program_file_path = os.path.join(is4_copy_folder,'src','Host','Program.cs')
