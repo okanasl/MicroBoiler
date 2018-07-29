@@ -8,18 +8,18 @@ import { Router } from '@angular/router';
   styleUrls: ['./login.component.scss']
 })
 export class LoginComponent implements OnDestroy {
-
+    userData: any;
+    isAuthorized: boolean;
   constructor(
         public oidcSecurityService: OidcSecurityService,
         public router: Router
     ) {
-        if (this.oidcSecurityService.moduleSetup) {
-            this.doCallbackLogicIfRequired();
-        } else {
-            this.oidcSecurityService.onModuleSetup.subscribe(() => {
-                this.doCallbackLogicIfRequired();
-            });
-        }
+        this.oidcSecurityService.getUserData().subscribe(userdata=>{
+            this.userData = userdata;
+        })
+        this.oidcSecurityService.getIsAuthorized().subscribe(isAuthorized=>{
+            this.isAuthorized = isAuthorized;
+        })
     }
 
     ngOnDestroy(): void {
@@ -33,6 +33,7 @@ export class LoginComponent implements OnDestroy {
             } else {
                 (<any>window).attachEvent('login_callback_message', this.popupCallbackLogic.bind(this));
             }// handle the authorrization URL
+            console.log(authUrl)
             this.popupCenter(authUrl, 'Login', 500, 540, null);
             // window.open(authUrl, '_blank', 'toolbar=1,location=111,menubar=0,left=,width=500,height=600');
         });
@@ -63,12 +64,8 @@ export class LoginComponent implements OnDestroy {
         this.oidcSecurityService.logoff();
     }
 
-    private doCallbackLogicIfRequired() {
-        if (window.location.hash) {
-            this.oidcSecurityService.authorizedCallback();
-        }
-    }
     private popupCallbackLogic(event) {
+        console.log(event)
         this.oidcSecurityService.authorizedCallback(event.detail);
     }
 }

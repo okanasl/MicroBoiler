@@ -27,7 +27,7 @@
                 "output": "/"
               },
               {
-                "glob": "login_callback.html",
+                "glob": "login-callback.html",
                 "input": "src",
                 "output": "/"
               },

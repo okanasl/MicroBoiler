@@ -175,8 +175,7 @@ clients:
          - openid
          - email
          - profile
-         - foo_api_fullaccess
-         - bar_api_readonly
+         - bar_api_fullaccess
       ports: [4200]
       server: 
         provider: myNginxServer # optional

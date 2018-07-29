@@ -914,8 +914,8 @@ def BuildConnStringForIs4(identity_options):
                     user = database_instance['docker_compose_set']['environment']['POSTGRES_USER']
                 if 'POSTGRES_PASSWORD' in database_instance['docker_compose_set']['environment']:
                     password = database_instance['docker_compose_set']['environment']['POSTGRES_PASSWORD']
-    user_connection_string, user_connection_string_dev = BuildDatabaseConnectionString(database_type,database_instance['name'],identity_options['name']+'_users',user,password)        
-    config_connection_string, config_connection_string_dev = BuildDatabaseConnectionString(database_type,database_instance['name'],identity_options['name']+'_config',user,password)
+    user_connection_string, user_connection_string_dev = BuildDatabaseConnectionString(database_type,database_instance['name'],identity_options['name'].lower()+'_users',user,password)        
+    config_connection_string, config_connection_string_dev = BuildDatabaseConnectionString(database_type,database_instance['name'],identity_options['name'].lower()+'_config',user,password)
     conn_strings = {}
     conn_strings['user_connection_string'] =user_connection_string
     conn_strings['user_connection_string_dev'] =user_connection_string_dev
@@ -1270,9 +1270,9 @@ def HandleEnvironmentForAuthConfig(client_options, copy_folder):
         identity_instance = FindIdentityServiceWithName(client_options['authorization']['issuer'])
         identity_type = identity_instance['type']
         prod_replace_dict = {
-            '{{auth:stsServer}}': identity_instance['name'].lower()+'.localhost',
-            '{{auth:clientUrl}}': client_options['name'].lower()+'.localhost',
-            '{{auth:client_id}}': client_options['name']
+            '{{auth:stsServer}}': 'http://'+identity_instance['name'].lower()+'.localhost',
+            '{{auth:clientUrl}}': 'http://'+client_options['name'].lower()+'.localhost',
+            '{{auth:client_id}}': 'http://'+client_options['name']
         }
         dev_replace_dict = {
             '{{auth:stsServer}}': 'http://localhost:'+str(identity_instance['ports'][0]),
@@ -1321,8 +1321,8 @@ def HandleAngular6SsrClient(client_options):
     if os.path.isdir(copy_folder):
         shutil.rmtree(copy_folder,ignore_errors=True)
     # TODO: Ignore Node MOdules in prod 
-    # shutil.copytree(template_folder,copy_folder)
-    shutil.copytree(template_folder,copy_folder,ignore=shutil.ignore_patterns('node_modules*'))
+    shutil.copytree(template_folder,copy_folder)
+    # shutil.copytree(template_folder,copy_folder,ignore=shutil.ignore_patterns('node_modules*'))
     HandleAngular6SsrAuth(client_options,copy_folder)
 
 def HandleClients(clients):

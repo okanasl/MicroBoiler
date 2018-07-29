@@ -1,8 +1,8 @@
 import { REQUEST } from '@nguniversal/express-engine/tokens'
 import { PlatformService } from './platform.service'
-import { Inject, Injectable, Injector } from '@angular/core'
+import { Injectable, Injector } from '@angular/core'
 import { Subject, Observable } from 'rxjs'
-import { CookieAttributes, getJSON, remove, set } from 'js-cookie'
+import { CookieAttributes, getJSON,get as getCookie, remove, set } from 'js-cookie'
 
 export interface ICookieService {
   cookies$: Observable<{ [key: string]: any }>
@@ -41,6 +41,10 @@ export class CookieService implements ICookieService {
 
   public get(name: string): any {
     if (this.platformService.isBrowser) {
+      if (name == 'authStateControl')
+      {
+        return getCookie(name)
+      }
       return getJSON(name)
     } else {
       try {
