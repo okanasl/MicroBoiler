@@ -697,15 +697,15 @@ def HandleIs4ClientConfiguration(clients, identity_service, is4_copy_folder):
     client_config_as_cs = ""
     client_count = len(clients)
     for client_ind, client in enumerate(clients):
-        client_host = client['name'].lower()+'.localhost'
+        client_host = 'http://'+client['name'].lower()+'.localhost'
         redirect_url_templ_val = ( InDbQ(client_host) +',\n' 
-        + '\t\t\t\t\t\t'+ InDbQ(client_host+'/silent-renew.html') +',\n' 
-        + '\t\t\t\t\t\t'+ InDbQ(client_host+'/login-callback.html')) 
+        + '\t\t\t\t\t\t'+ InDbQ('http://'+client_host+'/silent-renew.html') +',\n' 
+        + '\t\t\t\t\t\t'+ InDbQ('http://'+client_host+'/login-callback.html')) 
         
         post_logout_redirect_url_val = ( InDbQ(client_host) +',\n'
-        + '\t\t\t\t\t\t'+ InDbQ(client_host+'/loggedout'))
+        + '\t\t\t\t\t\t'+ InDbQ('http://'+client_host+'/loggedout'))
 
-        cors_origins_val = InDbQ(client_host) +',\n'
+        cors_origins_val = InDbQ('http://'+client_host) +',\n'
 
         grant_type_val = 'GrantTypes.Implicit'
         if client['type'].startswith('angular'):
@@ -742,13 +742,13 @@ def HandleIs4ClientConfiguration(clients, identity_service, is4_copy_folder):
         # Dev configuration
         client_host = 'localhost:'+str(client['ports'][0])
         redirect_url_templ_val = ( InDbQ(client_host) +',\n' 
-        + '\t\t\t\t\t\t'+ InDbQ(client_host+'/silent-renew.html') +',\n' 
-        + '\t\t\t\t\t\t'+ InDbQ(client_host+'/login-callback.html')) 
+        + '\t\t\t\t\t\t'+ InDbQ('http://'+client_host+'/silent-renew.html') +',\n' 
+        + '\t\t\t\t\t\t'+ InDbQ('http://'+client_host+'/login-callback.html')) 
         
         post_logout_redirect_url_val = ( InDbQ(client_host) +',\n'
-        + '\t\t\t\t\t\t'+ InDbQ(client_host+'/loggedout'))
+        + '\t\t\t\t\t\t'+ InDbQ('http://'+client_host+'/loggedout'))
 
-        cors_origins_val = InDbQ(client_host) +',\n'
+        cors_origins_val = InDbQ('http://'+client_host) +',\n'
 
         grant_type_val = 'GrantTypes.Implicit'
         if client['type'].startswith('angular'):
@@ -937,7 +937,7 @@ def HandleEventBusForIs4(i_srv, is4_copy_folder):
     startup_file_path = os.path.join(is4_copy_folder,'src','Host','Startup.cs')
     repleceDict = {
         '{{rabbitmq:host}}': 'rabbitmq://'+eventbus_srv['name']+':5672',
-        '{{rabbitmq:host-dev}}' : 'localhost'
+        '{{rabbitmq:host-dev}}' : 'rabbitmq://localhost'
     }
     if 'docker_compose_set' in eventbus_srv:
         if 'environment' in eventbus_srv['docker_compose_set']:
@@ -1277,7 +1277,7 @@ def HandleEnvironmentForAuthConfig(client_options, copy_folder):
         dev_replace_dict = {
             '{{auth:stsServer}}': 'http://localhost:'+str(identity_instance['ports'][0]),
             '{{auth:clientUrl}}': 'http://localhost:'+str(client_options['ports'][0]),
-            '{{auth:client_id}}': client_options['name']
+            '{{auth:client_id}}': client_options['name']+'dev'
         }
         if 'scopes' in client_options['authorization']:
             prod_replace_dict['{{auth:scope}}'] = " ".join(client_options['authorization']['scopes'])
