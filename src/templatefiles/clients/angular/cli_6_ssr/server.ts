@@ -1,5 +1,6 @@
 import 'zone.js/dist/zone-node';
 import 'reflect-metadata';
+import * as cookieParser from 'cookie-parser'
 import {enableProdMode} from '@angular/core';
 // Express Engine
 import {ngExpressEngine} from '@nguniversal/express-engine';
@@ -14,6 +15,7 @@ enableProdMode();
 
 // Express server
 const app = express();
+app.use(cookieParser())
 
 const PORT = process.env.PORT;
 const DIST_FOLDER = join(process.cwd(), 'dist');

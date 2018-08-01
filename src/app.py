@@ -1272,7 +1272,7 @@ def HandleEnvironmentForAuthConfig(client_options, copy_folder):
         prod_replace_dict = {
             '{{auth:stsServer}}': 'http://'+identity_instance['name'].lower()+'.localhost',
             '{{auth:clientUrl}}': 'http://'+client_options['name'].lower()+'.localhost',
-            '{{auth:client_id}}': 'http://'+client_options['name']
+            '{{auth:client_id}}': client_options['name']
         }
         dev_replace_dict = {
             '{{auth:stsServer}}': 'http://localhost:'+str(identity_instance['ports'][0]),
