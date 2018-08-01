@@ -699,13 +699,13 @@ def HandleIs4ClientConfiguration(clients, identity_service, is4_copy_folder):
     for client_ind, client in enumerate(clients):
         client_host = 'http://'+client['name'].lower()+'.localhost'
         redirect_url_templ_val = ( InDbQ(client_host) +',\n' 
-        + '\t\t\t\t\t\t'+ InDbQ('http://'+client_host+'/silent-renew.html') +',\n' 
-        + '\t\t\t\t\t\t'+ InDbQ('http://'+client_host+'/login-callback.html')) 
+        + '\t\t\t\t\t\t'+ InDbQ(client_host+'/silent-renew.html') +',\n' 
+        + '\t\t\t\t\t\t'+ InDbQ(client_host+'/login-callback.html')) 
         
         post_logout_redirect_url_val = ( InDbQ(client_host) +',\n'
-        + '\t\t\t\t\t\t'+ InDbQ('http://'+client_host+'/loggedout'))
+        + '\t\t\t\t\t\t'+ InDbQ(client_host+'/loggedout'))
 
-        cors_origins_val = InDbQ('http://'+client_host) +',\n'
+        cors_origins_val = InDbQ(client_host) +',\n'
 
         grant_type_val = 'GrantTypes.Implicit'
         if client['type'].startswith('angular'):
@@ -740,15 +740,15 @@ def HandleIs4ClientConfiguration(clients, identity_service, is4_copy_folder):
             client_config_as_cs = client_config_as_cs.replace('{{client:scopes}}',scope_val)
         client_config_as_cs += ',\n'
         # Dev configuration
-        client_host = 'localhost:'+str(client['ports'][0])
+        client_host = 'http://localhost:'+str(client['ports'][0])
         redirect_url_templ_val = ( InDbQ(client_host) +',\n' 
-        + '\t\t\t\t\t\t'+ InDbQ('http://'+client_host+'/silent-renew.html') +',\n' 
-        + '\t\t\t\t\t\t'+ InDbQ('http://'+client_host+'/login-callback.html')) 
+        + '\t\t\t\t\t\t'+ InDbQ(client_host+'/silent-renew.html') +',\n' 
+        + '\t\t\t\t\t\t'+ InDbQ(client_host+'/login-callback.html')) 
         
         post_logout_redirect_url_val = ( InDbQ(client_host) +',\n'
-        + '\t\t\t\t\t\t'+ InDbQ('http://'+client_host+'/loggedout'))
+        + '\t\t\t\t\t\t'+ InDbQ(client_host+'/loggedout'))
 
-        cors_origins_val = InDbQ('http://'+client_host) +',\n'
+        cors_origins_val = InDbQ(client_host) +',\n'
 
         grant_type_val = 'GrantTypes.Implicit'
         if client['type'].startswith('angular'):
