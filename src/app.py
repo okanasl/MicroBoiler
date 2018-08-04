@@ -1076,7 +1076,7 @@ def HandleDotnetApiStartup(dotnet_service, api_copy_folder):
     # Set DBContext Name
     CamelCaseName = to_camelcase(dotnet_service['name'])
     replaceDict = {
-        'NameContext': CamelCaseName + 'Context'        
+        'NameContext': CamelCaseName.replace('.','') + 'Context'    
     }
     if 'database' in dotnet_service:
         database_instance = FindDatabaseWithName(dotnet_service['database']['provider'])
@@ -1086,22 +1086,30 @@ def HandleDotnetApiStartup(dotnet_service, api_copy_folder):
     if 'cache' in dotnet_service:
         if dotnet_service['cache']['type'] == 'redis':
             redis_instance = FindDatabaseWithName(dotnet_service['cache']['redis_options']['redis_server'])
-            redis_conn_string, redis_conn_string_dev = BuildRedisConnectionString(redis_instance)
-            replaceDict['{{redis_options:connection}}'] = redis_conn_string
-            replaceDict['{{redis_options:connection-dev}}'] = 'localhost:6379'
-            if 'redis_instance_name' in dotnet_service['cache']['redis_options']:
-                replaceDict['{{redis_options:instance_name}}'] = dotnet_service['cache']['redis_options']['redis_instance_name']
+            if redis_instance is None:
+                print ('Warning: Redis instance could not found. Configuration left default')
+            else:
+                redis_conn_string, redis_conn_string_dev = BuildRedisConnectionString(redis_instance)
+                replaceDict['{{redis_options:connection}}'] = redis_conn_string
+                replaceDict['{{redis_options:connection-dev}}'] = 'localhost:6379'
+                if 'redis_instance_name' in dotnet_service['cache']['redis_options']:
+                    replaceDict['{{redis_options:instance_name}}'] = dotnet_service['cache']['redis_options']['redis_instance_name']
     if 'authorization' in dotnet_service:
         issuer = dotnet_service['authorization']['issuer']
+        if issuer is None:
+            print ('Error: Identity Issuer for '+dotnet_service['name']+' is required')
         identity_instance = FindIdentityServiceWithName(issuer)
-        replaceDict['{{authorization:api_name}}'] = dotnet_service['name']        
-        replaceDict['{{authorization:authority}}'] = str.lower(identity_instance['name'])+'.localhost'
-        replaceDict['{{authorization:authority-dev}}'] = 'http://localhost:'+str(identity_instance['ports'][0])
-        if 'api_secret' in dotnet_service['authorization']:
-            replaceDict['{{authorization:api_secret}}'] = dotnet_service['authorization']['secrets'][0]
+        if identity_instance is None:
+            print ('Error: Identity Service Instance for '+dotnet_service['name']+' could not found')
         else:
-            # Set Default Secret
-            replaceDict['{{authorization:api_secret}}'] = 'secret'
+            replaceDict['{{authorization:api_name}}'] = dotnet_service['name']        
+            replaceDict['{{authorization:authority}}'] = str.lower(identity_instance['name'])+'.localhost'
+            replaceDict['{{authorization:authority-dev}}'] = 'http://localhost:'+str(identity_instance['ports'][0])
+            if 'api_secret' in dotnet_service['authorization']:
+                replaceDict['{{authorization:api_secret}}'] = dotnet_service['authorization']['secrets'][0]
+            else:
+                # Set Default Secret
+                replaceDict['{{authorization:api_secret}}'] = 'secret'
 
     replace_template_file(api_startup_path,replaceDict)
 
@@ -1116,7 +1124,7 @@ def HandleDotnetApiDbContext(dotnet_service, api_copy_folder):
         'src',
         'Data',
         'NameContext.cs')
-    CamelCaseDbName = to_camelcase(dotnet_service['name']) + 'Context'
+    CamelCaseDbName = to_camelcase(dotnet_service['name']).replace('.','') + 'Context'
     if 'database' in dotnet_service:
         if os.path.exists(dbcontext_path):
             dbcontext_rename_path = os.path.join(api_copy_folder,
@@ -1183,7 +1191,7 @@ def HandleDotnetApiDockerFile(dotnet_service, api_copy_folder):
     if 'database' in dotnet_service:
         ef_shell_replace_dict = {
             '{{ProjectName}}' : to_camelcase(dotnet_service['name']),
-            '{{DatabaseContextName}}' : to_camelcase(dotnet_service['name']) + 'Context'
+            '{{DatabaseContextName}}' : to_camelcase(dotnet_service['name']).replace('.','') + 'Context'
         }
         shell_file_paths = ['migrations.sh','updatedb.sh','dropdb.sh','migrations.dev.sh','updatedb.dev.sh','dropdb.dev.sh']
         for path in shell_file_paths:

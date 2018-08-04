@@ -11,6 +11,7 @@
 *.userprefs
 postgres-data/
 ExampleApp/
+MicroStarter/
 user_images/
 is-cache/
 # Build results

@@ -54,8 +54,8 @@ export class AuthClModule {
             openIDImplicitFlowConfiguration.response_type = config.response_type;
             openIDImplicitFlowConfiguration.scope = config.scope;
             openIDImplicitFlowConfiguration.post_logout_redirect_uri = config.post_logout_redirect_uri;
-            openIDImplicitFlowConfiguration.start_checksession = config.start_checksession;
-            openIDImplicitFlowConfiguration.silent_renew = config.silent_renew;
+            openIDImplicitFlowConfiguration.start_checksession = typeof window !== 'undefined' ? config.start_checksession : false;
+            openIDImplicitFlowConfiguration.silent_renew = typeof window !== 'undefined' ? config.silent_renew : false;
             openIDImplicitFlowConfiguration.silent_renew_url = config.silent_renew_url;
             openIDImplicitFlowConfiguration.post_login_route = config.startup_route;
             // HTTP 403

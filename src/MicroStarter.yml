@@ -1,0 +1,169 @@
+version: 0.1
+name: MicroStarter
+# dotnet_class_libs:
+#   - core:
+#       name: ExampleApp.Core # required
+#       framework: netstandard1.3 # default (netstandard2.0)
+#   - events_core:
+#       name: ExampleApp.EventCore
+#       framework: netstandard2.0
+servers: 
+   - nginx_instance_v1:
+      type: nginx  # required (default)
+      name : NginxServer # required
+      ports: [80,443] # Default HTTP and HTTPS ports
+      config: # example (default) config 
+        worker_processes: '1'
+        events:
+          worker_connections: '1024'
+        http:
+          gzip: 'on'
+          gzip_http_version: '1.0'
+          gzip_comp_level: '2'
+          gzip_min_length: '1100'
+          gzip_buffers : '4 8k'
+          gzip_proxied: 'expired no-cache no-store private auth'
+          gzip_disable: '"MSIE [1-6]\."'
+          gzip_vary: 'on'
+
+databases:
+   - postgresql_instance_v1:
+      type: postgresql
+      name: postgre_name
+      ports: [6379]
+      docker_compose_set: # optional (default values) set yours to override
+        image: postgres
+        container_name: my_postgre_container
+        volumes:
+           - ./postgres-data:/var/lib/postgresql/data
+        environment:
+          POSTGRES_PASSWORD: machine
+          POSTGRES_USER: doom
+          POSTGRES_DB: dev
+  
+   - redis_instance_v1:
+      name: my_redis
+      type: redis
+      user: 
+        username: doom
+        password: machine
+      ports: [6379]
+eventbus:
+   - rabbitmq_instance_v1:
+      type: rabbitmq # required
+      name: MicroStarter.RabbitMq # required
+      docker_compose_set: # defalt docker override options
+        image: rabbitmq:3-management-alpine
+        container_name: rabbitmqc
+        volumes:
+          - rabbit-volume:/var/lib/rabbitmq
+        ports:
+          - "15672:15672"
+          - "5672:5672"
+          - "5671:5671"
+        environment:
+          RABBITMQ_DEFAULT_PASS: machine
+          RABBITMQ_DEFAULT_USER: doom
+identity_services:
+   - identityserver_v1:
+      type: identityserver4
+      name: MyIdentityService
+      eventbus: 
+        provider: MicroStarter.RabbitMq
+      ports: [5000]
+      server: 
+        provider: NginxServer
+      logging: serilog
+      user_auth: aspnet_identity # only option
+      database: # required
+        provider: postgre_name # required
+api_services: 
+  #  - foo_api:
+  #     type: dotnet_web_api
+  #     name: myFooApi
+  #     swagger: false
+  #     eventbus: # optional
+  #       provider: MicroStarter.RabbitMq # required
+  #     authorization: # optional
+  #       issuer: MyIdentityService # required
+  #       secrets: 
+  #         - "MyIdentityService_foo_secret"
+  #       avaliable_scopes: 
+  #        - "foo_api_fullaccess"
+  #     database: 
+  #       provider: postgre_name
+  #       database_name: foo_api_db
+  #     cache: # optional
+  #       type: memory # required
+  #     ports: [7000] # optional (random if not set)
+  #     server: 
+  #       provider: NginxServer # optional
+  #     logging: serilog
+   - bar_api:
+      type: dotnet_web_api
+      name: MicroStarter.Api
+      swagger: true
+      database: 
+        provider: postgre_name
+        database_name: microstarter_api_db
+      cache:
+        type: memory 
+        redis_options: 
+          redis_server: my_redis
+          redis_instance_name: master
+      eventbus: 
+        provider: MicroStarter.RabbitMq
+      ports: [8000]
+      server: 
+        provider: NginxServer 
+      logging: serilog
+      authorization:
+        issuer: MyIdentityService
+        secrets: 
+          - "MyIdentityService_bar_secret"
+        avaliable_scopes:
+         - "bar_api_read"
+         - "bar_api_write"
+         - "bar_api_fullaccess"
+        user_claims: # claims that is avaliable for user profile
+         - "sub"
+         - "updated_at"
+         - "iat"
+         - "amr"
+         - "sid"
+         - "jti"
+         - "client_id"
+         - "scope"
+         - "role"
+         - "id"
+         - "exp"
+         - "aud"
+         - "name"
+         - "given_name"
+         - "family_name"
+         - "middle_name"
+         - "nickname"
+         - "preferred_username"
+         - "profile"
+         - "picture"
+         - "email_verified"
+         - "email"
+clients: 
+   - web_1:
+      type: angular_cli_6_ssr
+      name: MicroStarter.AngularSsrClient
+      # add_npm_packages:
+      #  - name: '@ngrx/store'
+      #    version: '6.0.1'
+      authorization: # using angular-oidc-client library
+        issuer: MyIdentityService
+        scopes: 
+         - openid
+         - email
+         - profile
+         - bar_api_fullaccess
+      ports: [4200]
+      server: 
+        provider: NginxServer
+
+      
