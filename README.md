@@ -6,7 +6,7 @@ A Python 3 Tool to generate various types of microservice patterns.
 - [x] ![Rabbitmq](https://pbs.twimg.com/profile_images/107544284/rabbit.jpg) Rabbitmq
 - [x] ![Redis](https://avatars1.githubusercontent.com/u/1529926?v=3&s=100) Redis
 ### Services
-- [x] ![Dotnet](https://avatars-01.gitter.im/gh/u/dotnetcore) Dotnet Core Microservice
+- [x] ![Dotnet](https://raygun.com/upload/languages/dotnet/dotnet.svg) Dotnet Core Microservice
 - [ ] ![Nodejs](https://chocolatey.org/content/packageimages/nodejs.10.8.0.png) NodeJs Microservice
 ### Identity
 - [x] IdentityServer4 Template / Configuration
