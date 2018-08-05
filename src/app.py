@@ -321,9 +321,13 @@ def HandleCSharpEventbus(service_options, sharp_file_path):
 # end C# helpers
 
 
-def CreateProjectDirectory(projectName):
+def CreateProjectDirectory(projectName, outputDir):
     print ("Scaffolding Project", projectName)
-    directory = os.path.normpath(os.path.join(scriptPath, optionsFilePath,'../'))
+    directory = None
+    if outputDir is None:
+        directory = os.path.normpath(os.path.join(scriptPath, optionsFilePath,'../'))
+    else:
+        directory = os.path.normpath(os.path.join(os.getcwd(),outputDir))
     projectDir = os.path.normpath(os.path.join(directory, projectName))
     srcDir = os.path.normpath(os.path.join(projectDir,"src"))
     docker_volume_dir = os.path.normpath(os.path.join(projectDir,"docker_volumes"))
@@ -1348,18 +1352,25 @@ print('Enter a command')
 print('To get help, enter `help`.')
 while True:
     cmd, *args = shlex.split(input('> '))
+    outputDir = None
     if cmd=='boile':
         optionsFilePath = args[0]
+        if args[2] == '-o' or args[2] == '--output':
+            outputDir = args[3]
+        if optionsFilePath is None:
+            print('Plaese Provide a config file path')
+            print ('Ex: boile example-config.yml')
+            exit
         with open(optionsFilePath, 'r') as stream:
             try:
                 # Load Yaml
                 projectOptions = yaml.load(stream)
                 if not ('name' in projectOptions):
                     print('Please Provide a valid project name')
-                    break
+                    exit
                 projectName = projectOptions['name']
                 # Create Project Files
-                projectDir, srcDir = CreateProjectDirectory(projectName)
+                projectDir, srcDir = CreateProjectDirectory(projectName, outputDir)
 
                 # Create Servers (Nginx Apache)
                 if('servers' in projectOptions):

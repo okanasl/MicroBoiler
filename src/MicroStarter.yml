@@ -67,7 +67,7 @@ eventbus:
 identity_services:
    - identityserver_v1:
       type: identityserver4
-      name: MyIdentityService
+      name: MicroStarter.Identity
       eventbus: 
         provider: MicroStarter.RabbitMq
       ports: [5000]
@@ -85,9 +85,9 @@ api_services:
   #     eventbus: # optional
   #       provider: MicroStarter.RabbitMq # required
   #     authorization: # optional
-  #       issuer: MyIdentityService # required
+  #       issuer: MicroStarter.Identity # required
   #       secrets: 
-  #         - "MyIdentityService_foo_secret"
+  #         - "MicroStarter.Identity_foo_secret"
   #       avaliable_scopes: 
   #        - "foo_api_fullaccess"
   #     database: 
@@ -118,9 +118,9 @@ api_services:
         provider: NginxServer 
       logging: serilog
       authorization:
-        issuer: MyIdentityService
+        issuer: MicroStarter.Identity
         secrets: 
-          - "MyIdentityService_bar_secret"
+          - "MicroStarter.Identity_bar_secret"
         avaliable_scopes:
          - "bar_api_read"
          - "bar_api_write"
@@ -156,7 +156,7 @@ clients:
       #  - name: '@ngrx/store'
       #    version: '6.0.1'
       authorization: # using angular-oidc-client library
-        issuer: MyIdentityService
+        issuer: MicroStarter.Identity
         scopes: 
          - openid
          - email
