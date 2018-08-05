@@ -1355,8 +1355,12 @@ while True:
     outputDir = None
     if cmd=='boile':
         optionsFilePath = args[0]
-        if args[2] == '-o' or args[2] == '--output':
-            outputDir = args[3]
+        if len(args) is 3:
+            if args[1] == '-o' or args[1] == '--output':
+                if args[2] is not None:
+                    outputDir = args[2]
+                else:
+                    print ('Output Path did not specified.')
         if optionsFilePath is None:
             print('Plaese Provide a config file path')
             print ('Ex: boile example-config.yml')
