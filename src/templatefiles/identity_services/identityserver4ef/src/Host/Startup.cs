@@ -28,10 +28,15 @@ using IdentityServer4;
 //& region (eventbus)
 using MassTransit;
 using MassTransit.ExtensionsDependencyInjectionIntegration;
+using Polly;
 //& end (eventbus)
 
 //& region (server)
 using Microsoft.AspNetCore.HttpOverrides;
+using Polly.Retry;
+using System.Net.Sockets;
+using RabbitMQ.Client.Exceptions;
+using MassTransit.RabbitMqTransport;
 //& end (server)
 
 namespace Host
@@ -176,23 +181,39 @@ namespace Host
 //& region (eventbus:rabbitmq)
             services.AddMassTransit(p=>{
                 // p.AddConsumer<SomeEventHappenedConsumer>();
-            });
-            services.AddSingleton(provider => Bus.Factory.CreateUsingRabbitMq(cfg =>
-            {
-                var host = cfg.Host(new Uri(rabbitHostString), "/", h => {
-                    h.Username("{{rabbitmq:user:username}}");
-                    h.Password("{{rabbitmq:user:password}}");
-                });
-
-                cfg.ReceiveEndpoint(host, e =>
+            });            
+            var _retryCount = 8;
+            var policy = RetryPolicy.Handle<SocketException>()
+                .Or<BrokerUnreachableException>()
+                .Or<RabbitMqConnectionException>()
+                .WaitAndRetry(_retryCount, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)), (ex, time) =>
                 {
-                    e.PrefetchCount = 8;
-                    // Add Your Event Consumers Here
-                    // If you want Inject services to consumer, pass provider param
-                    // e.Consumer<SomeEventHappenedConsumer>(provider)
-                });
-            }));
+                    Console.WriteLine("Could not connect Broker Trying Again");
+                    Console.WriteLine(ex);
+                    Console.WriteLine("Retrying RabbitMq Connection");
+                }
+            );
+            IServiceProvider prov = services.BuildServiceProvider();
+            IBusControl busControl;
+            policy.Execute(() =>
+            {
+                busControl = Bus.Factory.CreateUsingRabbitMq(cfg =>
+                {
+                    var host = cfg.Host(new Uri(rabbitHostString), "/", h => {
+                        h.Username("{{rabbitmq:user:username}}");
+                        h.Password("{{rabbitmq:user:password}}");
+                    });
 
+                    cfg.ReceiveEndpoint(host, e =>
+                    {
+                        e.PrefetchCount = 8;
+                        // Add Your Event Consumers Here
+                        // If you want Inject services to consumer, pass provider param
+                        // e.Consumer<SomeEventHappenedConsumer>(provider)
+                    });
+                });
+                services.AddSingleton(provider => busControl);
+            });
             services.AddSingleton<IPublishEndpoint>(provider => provider.GetRequiredService<IBusControl>());
             services.AddSingleton<ISendEndpointProvider>(provider => provider.GetRequiredService<IBusControl>());
             services.AddSingleton<IBus>(provider => provider.GetRequiredService<IBusControl>());
