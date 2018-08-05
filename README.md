@@ -1,8 +1,9 @@
 # MicroBoiler (beta)
 A Python 3 Tool to generate various types of microservice patterns.
 ## Current Status
-- [x] ![Docker](https://addons.thunderbird.net/user-media/addon_icons/657/657778-64.png?modified=1444164735) Docker
-- [x] ![Nginx](https://images.sftcdn.net/images/t_app-logo-l,f_auto,dpr_auto/p/5ee3b363-b461-4e28-8c82-36b49ccb21bd/1544311950/nginx-logo.png) Nginx
+- [x] <img src="https://addons.thunderbird.net/user-media/addon_icons/657/657778-64.png?modified=1444164735" width="64"> Docker
+- [x]<img src="https://images.sftcdn.net/images/t_app-logo-l,f_auto,dpr_auto/p/5ee3b363-b461-4e28-8c82-36b49ccb21bd/1544311950/nginx-logo.png" width="64"> Nginx 
+    
 - [x] ![Rabbitmq](https://pbs.twimg.com/profile_images/107544284/rabbit.jpg) Rabbitmq
 - [x] ![Redis](https://avatars1.githubusercontent.com/u/1529926?v=3&s=100) Redis
 ### Services
