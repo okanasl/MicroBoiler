@@ -297,7 +297,7 @@ def HandleCSharpEventbus(service_options, sharp_file_path):
         eventbus_instance = FindEventBusWithName(service_options['eventbus']['provider'])
 
         if eventbus_instance['type'] == 'rabbitmq':
-            eb_replace_dict['{{rabbitmq:host}}'] = 'rabbitmq://'+eventbus_instance['name']+':5672'
+            eb_replace_dict['{{rabbitmq:host}}'] = 'rabbitmq://'+eventbus_instance['name']
             eb_replace_dict['{{rabbitmq:host-dev}}'] = 'localhost'
             eb_replace_dict['{{rabbitmq:user:username}}'] = 'doom'
             eb_replace_dict['{{rabbitmq:user:password}}'] = 'machine'
@@ -940,7 +940,7 @@ def HandleEventBusForIs4(i_srv, is4_copy_folder):
     eventbus_srv = FindEventBusWithName(i_srv['eventbus']['provider'])
     startup_file_path = os.path.join(is4_copy_folder,'src','Host','Startup.cs')
     repleceDict = {
-        '{{rabbitmq:host}}': 'rabbitmq://'+eventbus_srv['name']+':5672',
+        '{{rabbitmq:host}}': 'rabbitmq://'+eventbus_srv['name'],
         '{{rabbitmq:host-dev}}' : 'rabbitmq://localhost'
     }
     if 'docker_compose_set' in eventbus_srv:

@@ -51,7 +51,7 @@ databases:
 eventbus:
    - rabbitmq_instance_v1:
       type: rabbitmq # required
-      name: MicroStarter.RabbitMq # required
+      name: MicroStarterEventBus # required
       docker_compose_set: # defalt docker override options
         image: rabbitmq:3-management-alpine
         container_name: rabbitmqc
@@ -69,7 +69,7 @@ identity_services:
       type: identityserver4
       name: MicroStarter.Identity
       eventbus: 
-        provider: MicroStarter.RabbitMq
+        provider: MicroStarterEventBus
       ports: [5000]
       server: 
         provider: NginxServer
@@ -83,7 +83,7 @@ api_services:
   #     name: myFooApi
   #     swagger: false
   #     eventbus: # optional
-  #       provider: MicroStarter.RabbitMq # required
+  #       provider: MicroStarterEventBus # required
   #     authorization: # optional
   #       issuer: MicroStarter.Identity # required
   #       secrets: 
@@ -112,7 +112,7 @@ api_services:
           redis_server: my_redis
           redis_instance_name: master
       eventbus: 
-        provider: MicroStarter.RabbitMq
+        provider: MicroStarterEventBus
       ports: [8000]
       server: 
         provider: NginxServer 

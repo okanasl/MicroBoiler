@@ -186,6 +186,8 @@ namespace Host
             var policy = RetryPolicy.Handle<SocketException>()
                 .Or<BrokerUnreachableException>()
                 .Or<RabbitMqConnectionException>()
+                .OrInner<BrokerUnreachableException>()
+                .OrInner<RabbitMqConnectionException>()
                 .WaitAndRetry(_retryCount, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)), (ex, time) =>
                 {
                     Console.WriteLine("Could not connect Broker Trying Again");
