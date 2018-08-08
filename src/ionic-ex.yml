@@ -1,0 +1,54 @@
+version: 0.1
+name: IonicStarter
+# dotnet_class_libs:
+#   - core:
+#       name: ExampleApp.Core # required
+#       framework: netstandard1.3 # default (netstandard2.0)
+#   - events_core:
+#       name: ExampleApp.EventCore
+#       framework: netstandard2.0
+
+  
+databases:
+   - postgresql_instance_v1:
+      type: postgresql
+      name: postgre_name
+      ports: [6379]
+      docker_compose_set: # optional (default values) set yours to override
+        image: postgres
+        container_name: my_postgre_container
+        volumes:
+           - ./postgres-data:/var/lib/postgresql/data
+        environment:
+          POSTGRES_PASSWORD: machine
+          POSTGRES_USER: doom
+          POSTGRES_DB: dev
+identity_services:
+   - identityserver_v1:
+      type: identityserver4
+      name: MicroStarter.Identity
+      ports: [5000]
+      logging: serilog
+      user_auth: aspnet_identity # only option
+      database: # required
+        provider: postgre_name # required
+
+clients: 
+   - web_1:
+      type: angular_cli_6_ssr
+      name: MicroStarter.AngularSsrClient
+      # add_npm_packages:
+      #  - name: '@ngrx/store'
+      #    version: '6.0.1'
+      authorization: # using angular-oidc-client library
+        issuer: MicroStarter.Identity
+        scopes: 
+         - openid
+         - email
+         - profile
+         - bar_api_fullaccess
+      ports: [4200]
+      server: 
+        provider: NginxServer
+
+      

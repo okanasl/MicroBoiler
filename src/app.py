@@ -666,6 +666,10 @@ def HandleEventBus(eventbuses):
 
 def FindApiServicesUsesIs4(i_service_name):
     api_services = []
+    if 'api_services' not in projectOptions:
+        return api_services
+    if len(projectOptions['api_services']) < 1:
+        return api_services
     for service in projectOptions['api_services']:
         for key, value in service.items():            
             if 'authorization' in value:
@@ -674,6 +678,10 @@ def FindApiServicesUsesIs4(i_service_name):
     return api_services
 def FindClientsUsesIs4(i_service_name):
     clients = []
+    if 'clients' not in projectOptions:
+        return clients
+    if len(projectOptions['clients']) < 1:
+        return clients
     for client in projectOptions['clients']:
         for key, value in client.items():            
             if 'authorization' in value:
