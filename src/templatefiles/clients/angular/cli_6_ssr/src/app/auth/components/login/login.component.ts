@@ -32,13 +32,12 @@ export class LoginComponent implements OnDestroy {
                 window.addEventListener('login_callback_message', this.popupCallbackLogic.bind(this), false);
             } else {
                 (<any>window).attachEvent('login_callback_message', this.popupCallbackLogic.bind(this));
-            }// handle the authorrization URL
-            console.log(authUrl)
-            this.popupCenter(authUrl, 'Login', 500, 540, null);
+            }
+            this.loginWithInnerAuth(authUrl, 'Login', 500, 540, null);
             // window.open(authUrl, '_blank', 'toolbar=1,location=111,menubar=0,left=,width=500,height=600');
         });
     }
-    popupCenter(url, title, w, h, opts) {
+    loginWithInnerAuth(url, title, w, h, opts) {
         let _innerOpts = '';
         if (opts !== null && typeof opts === 'object' ) {
             for (const p in opts ) {
@@ -65,7 +64,6 @@ export class LoginComponent implements OnDestroy {
     }
 
     private popupCallbackLogic(event) {
-        console.log(event)
         this.oidcSecurityService.authorizedCallback(event.detail);
     }
 }

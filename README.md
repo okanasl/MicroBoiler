@@ -29,5 +29,5 @@ A Python 3 Tool to generate various types of microservice patterns.
 - [x] <img src="https://camo.githubusercontent.com/8601c7dc3b16cf5d214646765f6b5349316160cf/68747470733a2f2f616e67756c61722e696f2f6173736574732f696d616765732f6c6f676f732f636f6e636570742d69636f6e732f756e6976657273616c2e706e67" width="21"> Angular Client (Universal)
 - [ ] <img src="https://video-react.js.org/assets/logo.png" width="21"> React Web Client
 - [ ] <img src="https://vsmobile.gallerycdn.vsassets.io/extensions/vsmobile/vscode-react-native/0.6.13/1531997403930/Microsoft.VisualStudio.Services.Icons.Default" width="21"> React Native Client
-- [ ] <img src="https://d1eq8vvyuam4eq.cloudfront.net/tutorials/ionic/logo-ionic.svg?ver=1519728913" width="21"> Ionic 3 Client
+- [ ] <img src="https://d1eq8vvyuam4eq.cloudfront.net/tutorials/ionic/logo-ionic.svg?ver=1519728913" width="21"> Ionic 4(beta) Client
 - [ ] <img src="https://uploads-ssl.webflow.com/5a9e704c9cbfbc0001836b26/5aeb397f14a8af4c07e86587_vuejs.png" width="21"> VueJs Client
