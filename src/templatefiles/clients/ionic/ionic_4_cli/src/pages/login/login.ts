@@ -37,7 +37,7 @@ export class LoginPage {
         'location=no,clearsessioncache=yes,clearcache=yes');
       browser.addEventListener('loadstart', (event) => {
         console.log(event)
-        if ((event.url).indexOf('http://localhost:8100') === 0) {
+        if ((event.url).indexOf('localhost:8000') === 0) {
           browser.removeEventListener('exit', () => {});
           browser.close();
           const responseHash = ((event.url).split('#')[1])

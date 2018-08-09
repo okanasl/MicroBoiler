@@ -22,6 +22,12 @@ export class MyApp {
       statusBar.styleDefault();
       splashScreen.hide();
     });
+    this.router.events.filter((event: any) => event instanceof NavigationStart)
+    .subscribe((data: NavigationStart) => {
+        if (data.url.indexOf('id_token') !== 0) {
+            this.router.navigateByUrl('/');
+        }
+    });
   }
   
 }
