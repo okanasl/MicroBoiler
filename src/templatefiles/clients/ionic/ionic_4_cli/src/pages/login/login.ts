@@ -1,16 +1,13 @@
 import { Component } from '@angular/core';
-import { IonicPage, NavController, ToastController } from 'ionic-angular';
+import { NavController, ToastController } from 'ionic-angular';
 import { OidcSecurityService } from 'angular-auth-oidc-client';
-@IonicPage()
+declare const window: any;
+declare var cordova:any;
 @Component({
   selector: 'page-login',
   templateUrl: 'login.html'
 })
 export class LoginPage {
-  // The account fields for the login form.
-  // If you're using the username field with or without email, make
-  // sure to add it to the type
-  // Our translated text strings
   private loginErrorString: string;
   private userData: any;
   private isAuthorized: boolean;
@@ -36,18 +33,19 @@ export class LoginPage {
   }
   loginWithInnerAuth(authUrl)
   {
-    return new Promise((resolve, reject) => {
-      const browser = window.cordova.InAppBrowser.open(authUrl, '_blank',
+      const browser = cordova.InAppBrowser.open(authUrl, '_blank',
         'location=no,clearsessioncache=yes,clearcache=yes');
       browser.addEventListener('loadstart', (event) => {
+        console.log(event)
         if ((event.url).indexOf('http://localhost:8100') === 0) {
           browser.removeEventListener('exit', () => {});
           browser.close();
           const responseHash = ((event.url).split('#')[1])
+          console.log(event.url)
+          console.log(responseHash) 
           this.oidcSecurityService.authorizedCallback(responseHash)
-          resolve();
+          
         }
-      });
     });
   }
 }
