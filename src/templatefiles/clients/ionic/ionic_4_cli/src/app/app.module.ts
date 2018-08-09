@@ -15,6 +15,7 @@ import { HttpClientModule } from '@angular/common/http';
 import { AuthModule, OidcSecurityService, OpenIDImplicitFlowConfiguration, AuthWellKnownEndpoints } from "angular-auth-oidc-client";
 import { authConfig as config} from '../pages/login/authconfig';
 import { RouterModule } from '@angular/router';
+import { InAppBrowser } from '@ionic-native/in-app-browser';
 
 @NgModule({
   declarations: [
@@ -44,6 +45,7 @@ import { RouterModule } from '@angular/router';
   providers: [
     StatusBar,
     SplashScreen,
+    InAppBrowser,
     {provide: ErrorHandler, useClass: IonicErrorHandler}
   ]
 })

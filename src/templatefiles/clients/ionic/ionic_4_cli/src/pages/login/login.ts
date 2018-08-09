@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { NavController, ToastController } from 'ionic-angular';
 import { OidcSecurityService } from 'angular-auth-oidc-client';
+import { InAppBrowser } from '@ionic-native/in-app-browser';
 declare const window: any;
 declare var cordova:any;
 @Component({
@@ -12,6 +13,7 @@ export class LoginPage {
   private userData: any;
   private isAuthorized: boolean;
   constructor(public navCtrl: NavController,
+    private iab: InAppBrowser,
     public oidcSecurityService: OidcSecurityService,
     public toastCtrl: ToastController) {
       this.oidcSecurityService.getUserData().subscribe(userdata=>{
@@ -33,19 +35,20 @@ export class LoginPage {
   }
   loginWithInnerAuth(authUrl)
   {
-      const browser = cordova.InAppBrowser.open(authUrl, '_blank',
+      const browser = this.iab.create(authUrl, '_blank',
         'location=no,clearsessioncache=yes,clearcache=yes');
-      browser.addEventListener('loadstart', (event) => {
+      browser.on('loadstart').subscribe((event) => {
+        console.log("event")
         console.log(event)
         if ((event.url).indexOf('localhost:8000') === 0) {
-          browser.removeEventListener('exit', () => {});
           browser.close();
           const responseHash = ((event.url).split('#')[1])
+          console.log("event.url")
           console.log(event.url)
           console.log(responseHash) 
           this.oidcSecurityService.authorizedCallback(responseHash)
           
         }
-    });
+      });
   }
 }
