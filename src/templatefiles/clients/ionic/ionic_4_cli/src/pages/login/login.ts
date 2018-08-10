@@ -30,21 +30,12 @@ export class LoginPage {
     this.platform.ready().then(() => {
       this.oidcSecurityService.authorize((authUrl) => {
         this.loginWithInnerAuth(authUrl).then(responseHash => {
-            console.log(responseHash)
             this.oidcSecurityService.authorizedCallback(responseHash);
-            console.log("s")
         }, (error) => {
           console.log(error);
-          console.log("ee")
         });
+      });
     });
-  });
-    
-      // window.addEventListener('login_callback_message', this.loginCallbackLogic.bind(this), false);
-      
-      
-      // window.open(authUrl, '_blank', 'toolbar=1,location=111,menubar=0,left=,width=500,height=600');
-    
   }
   loginWithInnerAuth(authUrl) : Promise<any>
   {
@@ -57,15 +48,16 @@ export class LoginPage {
           if ((event.url).indexOf('localhost:8000') !== -1) {
             browserRef.removeEventListener("exit", (event) => {});
             browserRef.close();
-            let lastIndex = event.url.lastIndexOf('/')
-            if (lastIndex == -1) reject();
+            let lastIndex = event.url.lastIndexOf('#')
+            if (lastIndex === -1){
+              console.log(event.url)
+              reject("Hash is not valid");
+            } 
             const responseHash = ((event.url).substring(++lastIndex))
-            console.log(responseHash)
-            console.log(event.url)
             
             resolve(responseHash)
           }else{
-            reject()
+            reject("Check your identityserver redirect uri")
           }
         });
     });

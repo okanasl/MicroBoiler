@@ -1,10 +1,10 @@
 export const authConfig = {
     stsServer: 'http://localhost:5000',
-    redirect_url: 'http://localhost:8000/#/',
-    client_id: 'IonicooClient',
+    redirect_url: 'http://localhost:8000',
+    client_id: 'IoClient',
     response_type: 'id_token token',
     scope: 'openid profile email',
-    post_logout_redirect_uri: 'http://localhost:8000/#/',
+    post_logout_redirect_uri: 'http://localhost:8000',
     start_checksession: true,
     silent_renew: true,
     silent_renew_url: 'http://localhost:8000/silent-renew.html',
