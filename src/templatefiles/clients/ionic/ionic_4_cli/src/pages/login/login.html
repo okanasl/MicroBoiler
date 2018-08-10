@@ -9,7 +9,9 @@
 
 <ion-content>
     <ion-list>
-
+      <pre>
+        {{userData | json}}
+      </pre>
       <div padding>
         <button ion-button (click)="login()" block>Login</button>
       </div>

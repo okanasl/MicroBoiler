@@ -29,8 +29,9 @@ export class LoginPage {
   login() {
     this.platform.ready().then(() => {
       this.oidcSecurityService.authorize((authUrl) => {
-        this.loginWithInnerAuth(authUrl).then(data => {
-            this.oidcSecurityService.authorizedCallback(data.hashString);
+        this.loginWithInnerAuth(authUrl).then(responseHash => {
+            console.log(responseHash)
+            this.oidcSecurityService.authorizedCallback(responseHash);
             console.log("s")
         }, (error) => {
           console.log(error);
@@ -60,11 +61,9 @@ export class LoginPage {
             if (lastIndex == -1) reject();
             const responseHash = ((event.url).substring(++lastIndex))
             console.log(responseHash)
-            console.log("event.url")
             console.log(event.url)
-            console.log(responseHash) 
             
-            resolve({hasString:responseHash})
+            resolve(responseHash)
           }else{
             reject()
           }
