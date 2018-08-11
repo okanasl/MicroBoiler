@@ -545,7 +545,18 @@ def HandleMySql(db_options):
     if 'docker_compose_override' in db_options:
         default_mysql_options[db_options['name']].update(db_options['docker_compose_override'])    
     dockerOptions['services'][db_options['name']] = default_mysql_options[db_options['name']]
-
+def FindMongoUsingServiceNames(mongo_name):
+    api_services = []
+    if 'api_services' not in projectOptions:
+        return api_services
+    if len(projectOptions['api_services'] == 0):
+        return api_services
+    for service in projectOptions['api_services']:
+        for key, value in service.items():            
+            if 'database' in value:
+                if value['database']['provider'] == mongo_name:
+                    api_services.append(value['name'])
+    return api_services
 def FindRedisUsingServiceNames(redis_name):
     services = []
     for service in projectOptions['api_services']:
@@ -621,13 +632,13 @@ def HandleMongoDb(db_options):
     else:
          mongo_docker_options['ports'].append('"27017:27017"')
     mongo_using_services = FindMongoUsingServiceNames(db_options['name'])
-    # Add Links So We can use redis instance name to connect it in services
+    # Add Links So We can use mongo instance name to connect it in services
     for service_name in mongo_using_services:
         mongo_docker_options['links'].append(service_name)
 
     if 'docker_compose_override' in db_options:
         mongo_docker_options.update(db_options['docker_compose_override'])
-    dockerOptions['services'][db_options['name']]= mongo_docker_options
+    dockerOptions['services'][db_options['name']] = mongo_docker_options
 def HandleDatabases(databases):
     print ('Configuring Databases')
     for db in databases:
@@ -1308,12 +1319,51 @@ def HandleDotnetApiService(api_service_options):
     HandleDotnetApiNameSpaceAndCleaning(api_service_options,api_copy_folder)
     HandleDotnetApiDockerFile(api_service_options,api_copy_folder)
     HandleDotnetApiDockerCompose(api_service_options,api_copy_folder)
+def HandleNodeWebApi(api_service_opions):
+    CamelCaseName = to_camelcase(api_service_options['name'])
+    api_template_folder = os.path.join(apiServicesPath,'dotnet_web_api','src')
+    api_copy_folder = os.path.join(srcDir,'ApiServices',CamelCaseName )
+    if os.path.isdir(api_copy_folder):
+        shutil.rmtree(api_copy_folder,ignore_errors=True)
+    # TODO: Swap shutil operations
+    #shutil.copytree(api_template_folder,api_copy_folder,ignore=shutil.ignore_patterns('bin*','obj*'))
+    shutil.copytree(api_template_folder,api_copy_folder)
+    api_src_folder = os.path.join(srcDir,'ApiServices',CamelCaseName,'DotnetWebApi')
+    api_src_rename_folder = os.path.join(srcDir,'ApiServices',CamelCaseName,'src')
+    api_csproj_folder = os.path.join(srcDir,'ApiServices',CamelCaseName,'src','DotnetWebApi.csproj')
+    api_csproj_rename_folder = os.path.join(srcDir,'ApiServices',CamelCaseName,'src',CamelCaseName+'.csproj')
+    
+    if not os.path.isdir(api_src_rename_folder):
+        shutil.copytree(api_src_folder,api_src_rename_folder)
+        shutil.rmtree( api_src_folder,ignore_errors=True)
+    else: 
+        shutil.rmtree( api_src_rename_folder,ignore_errors=True)
+        shutil.copytree(api_src_folder,api_src_rename_folder)
+
+    if not os.path.exists(api_csproj_rename_folder):
+        shutil.copy(api_csproj_folder,api_csproj_rename_folder)
+        os.remove( api_csproj_folder)
+    else: 
+        os.remove(api_csproj_rename_folder)
+        shutil.copy(api_csproj_folder,api_csproj_rename_folder)
+
+
+    HandleDotnetApiCsproj(api_service_options,api_copy_folder)
+    HandleDotnetApiStartup(api_service_options,api_copy_folder)
+    HandleDotnetApiProgramFile(api_service_options,api_copy_folder)
+    HandleDotnetApiDbContext(api_service_options,api_copy_folder)
+    HandleDotnetApiNameSpaceAndCleaning(api_service_options,api_copy_folder)
+    HandleDotnetApiDockerFile(api_service_options,api_copy_folder)
+    HandleDotnetApiDockerCompose(api_service_options,api_copy_folder)
+    
 def HandleApiServices(api_services):
     print ('Scaffolding Api Services')
     for api_service in api_services:
         api_service_options = list(api_service.values())[0]
         if(api_service_options['type']=='dotnet_web_api'):
             HandleDotnetApiService(api_service_options)
+        if(api_service_options['type']=='node_web_api'):
+            HandleNodeWebApi(api_service_options)
 def HandleEnvironmentForAuthConfig(client_options, copy_folder):
     
     environment_dev_path = os.path.join(copy_folder,'src','environments','environment.ts')
