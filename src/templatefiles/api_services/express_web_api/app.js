@@ -9,6 +9,7 @@ var bodyParser = require('body-parser');
 var entityRouter = require('./routes/entity');
 var authtestRouter = require('./routes/authtest');
 
+require('dotenv').config()
 var environment = process.env.ENVIRONMENT;
 
 var app = express();
@@ -32,7 +33,7 @@ app.use(function(req, res, next) {
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-var port = process.env.PORT || 8080;        // set our port
+var port = process.env.PORT;        // set our port
 
 if (environment == 'Development')
 {
@@ -59,4 +60,5 @@ app.use(function(err, req, res, next) {
 
 app.listen(port);
 console.log('App Listening On Port:' + port);
+console.log('App Environment=> '+environment);
 module.exports = app;
