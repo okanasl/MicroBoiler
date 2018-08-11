@@ -31,7 +31,7 @@ databases:
       type: postgresql
       name: postgre_name
       ports: [6379]
-      docker_compose_set: # optional (default values) set yours to override
+      docker_compose_override: # optional (default values) set yours to override
         image: postgres
         container_name: my_postgre_container
         volumes:
@@ -40,11 +40,27 @@ databases:
           POSTGRES_PASSWORD: machine
           POSTGRES_USER: doom
           POSTGRES_DB: dev
+   - mongodb_instance:
+      type: mongodb
+      name: MyMongoDb
+      ports: [27017]
+      docker_compose_override: # optional (default values) set yours to override
+        image: mongo:latest
+        container_name: my_mongodb_container
+        environment:
+          - MONGO_DATA_DIR=/data/db
+          - MONGO_LOG_DIR=/dev/null
+          - MONGODB_USER=doom
+          - MONGODB_PASS=machine
+        environment:
+          POSTGRES_PASSWORD: machine
+          POSTGRES_USER: doom
+          POSTGRES_DB: dev   
    - mysql_instance:
       type: mysql # required
       name: my_mysql_server # required
       ports: [3306] # default port
-      docker_compose_set: # optional (default values below)
+      docker_compose_override: # optional (default values below)
         container_name: mysqlc
         command: mysqld --user=root --verbose
         environment:
@@ -64,7 +80,7 @@ eventbus:
    - rabbitmq_instance_v1:
       type: rabbitmq # required
       name: rabbit_name # required
-      docker_compose_set: # defalt docker override options
+      docker_compose_override: # defalt docker override options
         image: rabbitmq:3-management-alpine
         container_name: rabbitmqc
         volumes:
@@ -112,6 +128,54 @@ api_services:
   #    server: 
   #      provider: myNginxServer # optional
   #    logging: serilog
+   - node_foo_api:
+      type: node_web_api
+      name: MyNodeFooApi
+      database: 
+        provider: MyMongoDb
+        database_name: node_web_api_Db
+      cache:
+        type: redis 
+        redis_options: 
+          redis_server: my_redis
+          redis_instance_name: master
+      eventbus: 
+        provider: rabbit_name
+      ports: [5500]
+      server: 
+        provider: myNginxServer 
+      logging: morgan
+      authorization:
+        issuer: myIdentityService
+        secrets: 
+          - "myIdentityService_node_foo_secret"
+        avaliable_scopes:
+         - "node_foo_api_read"
+         - "node_foo_api_write"
+         - "node_foo_api_fullaccess"
+        user_claims: # claims that is avaliable for user profile
+         - "sub"
+         - "updated_at"
+         - "iat"
+         - "amr"
+         - "sid"
+         - "jti"
+         - "client_id"
+         - "scope"
+         - "role"
+         - "id"
+         - "exp"
+         - "aud"
+         - "name"
+         - "given_name"
+         - "family_name"
+         - "middle_name"
+         - "nickname"
+         - "preferred_username"
+         - "profile"
+         - "picture"
+         - "email_verified"
+         - "email"
    - bar_api:
       type: dotnet_web_api
       name: MyBarApi
@@ -119,7 +183,6 @@ api_services:
       database: 
         provider: my_mysql_server
         database_name: bar_api_db
-        create_database: true
       cache:
         type: redis 
         redis_options: 

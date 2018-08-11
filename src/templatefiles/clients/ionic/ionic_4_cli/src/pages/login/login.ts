@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { NavController, ToastController, Platform } from 'ionic-angular';
 import { OidcSecurityService } from 'angular-auth-oidc-client';
 import { InAppBrowser } from '@ionic-native/in-app-browser';
+import { authConfig } from './authconfig';
 declare const window: any;
 declare var cordova:any;
 @Component({
@@ -25,7 +26,6 @@ export class LoginPage {
     })
   }
 
-  // Attempt to login in through our User service
   login() {
     this.platform.ready().then(() => {
       this.oidcSecurityService.authorize((authUrl) => {
@@ -43,19 +43,46 @@ export class LoginPage {
       const browserRef = window.cordova.InAppBrowser.open(authUrl, '_blank',
         'location=no,clearsessioncache=yes,clearcache=yes');
         browserRef.addEventListener('loadstop',(event) => {
-          console.log("event")
-          console.log(event)
           if ((event.url).indexOf('localhost:8000') !== -1) {
             browserRef.removeEventListener("exit", (event) => {});
             browserRef.close();
             let lastIndex = event.url.lastIndexOf('#')
             if (lastIndex === -1){
-              console.log(event.url)
               reject("Hash is not valid");
             } 
-            const responseHash = ((event.url).substring(++lastIndex))
-            
+            const responseHash = ((event.url).substring(++lastIndex))            
             resolve(responseHash)
+          }else{
+            reject("Check your identityserver redirect uri")
+          }
+        });
+    });
+  }
+  logout(){
+    // TODO:
+    // Should get endSessionUrl
+    const endSessionUrl  = authConfig.stsServer;
+    this.platform.ready().then(() => {
+      this.logoutWithIFrame(endSessionUrl).then((isLogout)=>{
+        if (isLogout)
+        {
+          // TODO:
+          // Reset Auth Data
+          this.oidcSecurityService.refreshSession();
+        }   
+      })        
+    });
+  }
+
+  logoutWithIFrame(endSessionUrl) : Promise<any> {
+    return new Promise(function(resolve, reject) {
+      const browserRef = window.cordova.InAppBrowser.open(endSessionUrl, '_blank',
+        'location=no,clearsessioncache=yes,clearcache=yes,hidden=yes');
+        browserRef.addEventListener('loadstop',(event) => {
+          if ((event.url).indexOf('localhost:5000') !== -1) {
+            browserRef.removeEventListener("exit", (event) => {});
+            browserRef.close();            
+            resolve(true)
           }else{
             reject("Check your identityserver redirect uri")
           }

@@ -301,10 +301,10 @@ def HandleCSharpEventbus(service_options, sharp_file_path):
             eb_replace_dict['{{rabbitmq:host-dev}}'] = 'localhost'
             eb_replace_dict['{{rabbitmq:user:username}}'] = 'doom'
             eb_replace_dict['{{rabbitmq:user:password}}'] = 'machine'
-            if 'docker_compose_set' in eventbus_instance:
-                if 'envoronment' in eventbus_instance['docker_compose_set']:
-                    eb_replace_dict['{{rabbitmq:user:username}}'] = eventbus_instance['docker_compose_set']['environment']['RABBITMQ_DEFAULT_USER']
-                    eb_replace_dict['{{rabbitmq:user:password}}'] = eventbus_instance['docker_compose_set']['environment']['RABBITMQ_DEFAULT_PASSWORD']
+            if 'docker_compose_override' in eventbus_instance:
+                if 'envoronment' in eventbus_instance['docker_compose_override']:
+                    eb_replace_dict['{{rabbitmq:user:username}}'] = eventbus_instance['docker_compose_override']['environment']['RABBITMQ_DEFAULT_USER']
+                    eb_replace_dict['{{rabbitmq:user:password}}'] = eventbus_instance['docker_compose_override']['environment']['RABBITMQ_DEFAULT_PASSWORD']
         replace_template_file(sharp_file_path,eb_replace_dict)
         eventbus_type = eventbus_instance['type']
         with open(os.path.join(sharp_file_path), 'r+') as f:
@@ -515,8 +515,8 @@ def HandlePostgreSql(db_options):
             }
         }
     }
-    if 'docker_compose_set' in db_options:
-        default_postgre_options[db_options['name']].update(db_options['docker_compose_set'])  
+    if 'docker_compose_override' in db_options:
+        default_postgre_options[db_options['name']].update(db_options['docker_compose_override'])  
 
     dockerOptions['services'][db_options['name']] = default_postgre_options[db_options['name']]
 
@@ -542,8 +542,8 @@ def HandleMySql(db_options):
             }
         }
     }
-    if 'docker_compose_set' in db_options:
-        default_mysql_options[db_options['name']].update(db_options['docker_compose_set'])    
+    if 'docker_compose_override' in db_options:
+        default_mysql_options[db_options['name']].update(db_options['docker_compose_override'])    
     dockerOptions['services'][db_options['name']] = default_mysql_options[db_options['name']]
 
 def FindRedisUsingServiceNames(redis_name):
@@ -579,7 +579,8 @@ def HandleRedisDatabase(db_options):
         'restart': 'on-failure',
         'links':[],
         'depends_on':[],
-        'networks': ['localnet']
+        'networks': ['localnet'],
+        'volumes': ['rabbitmq-volume:'+docker_volume_dir],
     }
     # Add Ports
     if 'ports' in db_options:
@@ -593,7 +594,40 @@ def HandleRedisDatabase(db_options):
     for service_name in redis_using_services:
         redis_docker_options['links'].append(service_name)
     dockerOptions['services'][db_options['name']]= redis_docker_options
+def HandleMongoDb(db_options):
+    mongo_docker_volume_dir = os.path.normpath(os.path.join(projectDir,'docker_volumes','mongodb',db_options['name']))
+    if not os.path.isdir(mongo_docker_volume_dir):
+        os.makedirs(mongo_docker_volume_dir)
+    mongo_docker_options = {
+        'image': db_options['name'].lower(),
+        'build': {
+            'context': db_options['name']+'/',
+            'dockerfile': 'Dockerfile',
+        },
+        'container_name': db_options['name'],
+        'volumes': ['mongodb-volume:'+mongo_docker_volume_dir],
+        'ports':[],
+        'restart': 'on-failure',
+        'links':[],
+        'depends_on':[],
+        'networks': ['localnet']
+    }
+    dockerOptions['volumes']['mongodb-volume'] = {}
+    # Add Ports
+    if 'ports' in db_options:
+        for port in db_options['ports']:
+            mongo_docker_options['ports'].append(str(port)+':'+str(port))
+    # Default Port if Not provided
+    else:
+         mongo_docker_options['ports'].append('"27017:27017"')
+    mongo_using_services = FindMongoUsingServiceNames(db_options['name'])
+    # Add Links So We can use redis instance name to connect it in services
+    for service_name in mongo_using_services:
+        mongo_docker_options['links'].append(service_name)
 
+    if 'docker_compose_override' in db_options:
+        mongo_docker_options.update(db_options['docker_compose_override'])
+    dockerOptions['services'][db_options['name']]= mongo_docker_options
 def HandleDatabases(databases):
     print ('Configuring Databases')
     for db in databases:
@@ -605,6 +639,8 @@ def HandleDatabases(databases):
             HandleMySql(db_options)
         elif db_options['type'] == 'redis':
             HandleRedisDatabase(db_options)
+        elif db_options['type'] == 'mongodb':
+            HandleMongoDb(db_options)
 
 def FindApiServicesUsesRabbitmq(rabbit_name):
     api_services = []
@@ -649,8 +685,8 @@ def HandleRabbitMq(rabbit_options):
         'networks': ['localnet']
         # 'links':rabbit_identity_services + rabbit_api_services # may be unnecessary
     }
-    if 'docker_compose_set' in rabbit_options:
-        rabbitmq_docker_options.update(rabbit_options['docker_compose_set'])
+    if 'docker_compose_override' in rabbit_options:
+        rabbitmq_docker_options.update(rabbit_options['docker_compose_override'])
         
     dockerOptions['services'][rabbit_options['name']] = rabbitmq_docker_options
 
@@ -913,19 +949,19 @@ def BuildConnStringForIs4(identity_options):
     user = 'doom'
     password = 'machine'
     if database_type=='mysql':
-        if 'docker_compose_set' in database_instance:
-            if 'environment' in database_instance['docker_compose_set']:
-                if 'MYSQL_USER' in database_instance['docker_compose_set']['environment']:
-                    user = database_instance['docker_compose_set']['environment']['MYSQL_USER']
-                if 'MYSQL_PASSWORD' in database_instance['docker_compose_set']['environment']:
-                    password = database_instance['docker_compose_set']['environment']['MYSQL_PASSWORD']
+        if 'docker_compose_override' in database_instance:
+            if 'environment' in database_instance['docker_compose_override']:
+                if 'MYSQL_USER' in database_instance['docker_compose_override']['environment']:
+                    user = database_instance['docker_compose_override']['environment']['MYSQL_USER']
+                if 'MYSQL_PASSWORD' in database_instance['docker_compose_override']['environment']:
+                    password = database_instance['docker_compose_override']['environment']['MYSQL_PASSWORD']
     if database_type=='postgresql':
-        if 'docker_compose_set' in database_instance:
-            if 'environment' in database_instance['docker_compose_set']:
-                if 'POSTGRES_USER' in database_instance['docker_compose_set']['environment']:
-                    user = database_instance['docker_compose_set']['environment']['POSTGRES_USER']
-                if 'POSTGRES_PASSWORD' in database_instance['docker_compose_set']['environment']:
-                    password = database_instance['docker_compose_set']['environment']['POSTGRES_PASSWORD']
+        if 'docker_compose_override' in database_instance:
+            if 'environment' in database_instance['docker_compose_override']:
+                if 'POSTGRES_USER' in database_instance['docker_compose_override']['environment']:
+                    user = database_instance['docker_compose_override']['environment']['POSTGRES_USER']
+                if 'POSTGRES_PASSWORD' in database_instance['docker_compose_override']['environment']:
+                    password = database_instance['docker_compose_override']['environment']['POSTGRES_PASSWORD']
     user_connection_string, user_connection_string_dev = BuildDatabaseConnectionString(database_type,database_instance['name'],identity_options['name'].lower()+'_users',user,password)        
     config_connection_string, config_connection_string_dev = BuildDatabaseConnectionString(database_type,database_instance['name'],identity_options['name'].lower()+'_config',user,password)
     conn_strings = {}
@@ -951,14 +987,14 @@ def HandleEventBusForIs4(i_srv, is4_copy_folder):
         '{{rabbitmq:host}}': 'rabbitmq://'+eventbus_srv['name'],
         '{{rabbitmq:host-dev}}' : 'rabbitmq://localhost'
     }
-    if 'docker_compose_set' in eventbus_srv:
-        if 'environment' in eventbus_srv['docker_compose_set']:
-            if 'RABBITMQ_DEFAULT_USER' in eventbus_srv['docker_compose_set']['environment']:
-                repleceDict['{{rabbitmq:user:username}}'] = eventbus_srv['docker_compose_set']['environment']['RABBITMQ_DEFAULT_USER']
+    if 'docker_compose_override' in eventbus_srv:
+        if 'environment' in eventbus_srv['docker_compose_override']:
+            if 'RABBITMQ_DEFAULT_USER' in eventbus_srv['docker_compose_override']['environment']:
+                repleceDict['{{rabbitmq:user:username}}'] = eventbus_srv['docker_compose_override']['environment']['RABBITMQ_DEFAULT_USER']
             else:
                 repleceDict['{{rabbitmq:user:username}}'] = 'doom'
-            if 'RABBITMQ_DEFAULT_PASSWORD' in eventbus_srv['docker_compose_set']['environment']:
-                repleceDict['{{rabbitmq:user:password}}'] = eventbus_srv['docker_compose_set']['environment']['RABBITMQ_DEFAULT_PASSWORD']
+            if 'RABBITMQ_DEFAULT_PASSWORD' in eventbus_srv['docker_compose_override']['environment']:
+                repleceDict['{{rabbitmq:user:password}}'] = eventbus_srv['docker_compose_override']['environment']['RABBITMQ_DEFAULT_PASSWORD']
             else:
                 repleceDict['{{rabbitmq:user:password}}'] = 'machine'
         else:
@@ -1056,19 +1092,19 @@ def BuildConnStringForDotnetApi(dotnet_options):
     user = 'doom'
     password = 'machine'
     if database_type=='mysql':
-        if 'docker_compose_set' in database_instance:
-            if 'environment' in database_instance['docker_compose_set']:
-                if 'MYSQL_USER' in database_instance['docker_compose_set']['environment']:
-                    user = database_instance['docker_compose_set']['environment']['MYSQL_USER']
-                if 'MYSQL_PASSWORD' in database_instance['docker_compose_set']['environment']:
-                    password = database_instance['docker_compose_set']['environment']['MYSQL_PASSWORD']
+        if 'docker_compose_override' in database_instance:
+            if 'environment' in database_instance['docker_compose_override']:
+                if 'MYSQL_USER' in database_instance['docker_compose_override']['environment']:
+                    user = database_instance['docker_compose_override']['environment']['MYSQL_USER']
+                if 'MYSQL_PASSWORD' in database_instance['docker_compose_override']['environment']:
+                    password = database_instance['docker_compose_override']['environment']['MYSQL_PASSWORD']
     if database_type=='postgresql':
-        if 'docker_compose_set' in database_instance:
-            if 'environment' in database_instance['docker_compose_set']:
-                if 'POSTGRES_USER' in database_instance['docker_compose_set']['environment']:
-                    user = database_instance['docker_compose_set']['environment']['POSTGRES_USER']
-                if 'POSTGRES_PASSWORD' in database_instance['docker_compose_set']['environment']:
-                    password = database_instance['docker_compose_set']['environment']['POSTGRES_PASSWORD']
+        if 'docker_compose_override' in database_instance:
+            if 'environment' in database_instance['docker_compose_override']:
+                if 'POSTGRES_USER' in database_instance['docker_compose_override']['environment']:
+                    user = database_instance['docker_compose_override']['environment']['POSTGRES_USER']
+                if 'POSTGRES_PASSWORD' in database_instance['docker_compose_override']['environment']:
+                    password = database_instance['docker_compose_override']['environment']['POSTGRES_PASSWORD']
     connection_string, connection_string_dev = BuildDatabaseConnectionString(database_type,database_instance['name'],dotnet_options['name'],user,password)        
     
     return connection_string , connection_string_dev

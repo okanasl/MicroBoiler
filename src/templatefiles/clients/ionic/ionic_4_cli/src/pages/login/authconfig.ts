@@ -6,7 +6,7 @@ export const authConfig = {
     scope: 'openid profile email',
     post_logout_redirect_uri: 'http://localhost:8000',
     start_checksession: true,
-    silent_renew: true,
+    silent_renew: false,
     silent_renew_url: 'http://localhost:8000/silent-renew.html',
     startup_route: '/',
     forbidden_route: '/',

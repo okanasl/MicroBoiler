@@ -9,11 +9,12 @@
 
 <ion-content>
     <ion-list>
-      <pre>
-        {{userData | json}}
-      </pre>
       <div padding>
-        <button ion-button (click)="login()" block>Login</button>
+        {{userData | json}}
+      </div>
+      <div padding>
+        <button *ngIf="!isAuthorized" ion-button (click)="login()" block>Login</button>
+        <button *ngIf="isAuthorized" ion-button (click)="logout()" block>Logout</button>
       </div>
 
     </ion-list>
