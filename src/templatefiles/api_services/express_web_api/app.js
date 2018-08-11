@@ -4,9 +4,12 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 var mongoose   = require('mongoose');
+var bodyParser = require('body-parser');
 
-var indexRouter = require('./routes/index');
+var entityRouter = require('./routes/entity');
 var authtestRouter = require('./routes/authtest');
+
+var environment = process.env.ENVIRONMENT;
 
 var app = express();
 
@@ -17,7 +20,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
 
-app.use('/', indexRouter);
+app.use('/entity', entityRouter);
 app.use('/authtest', authtestRouter);
 
 // catch 404 and forward to error handler
@@ -30,9 +33,18 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
 var port = process.env.PORT || 8080;        // set our port
-var environment = process.env.ENVIRONMENT
-var ExampleEntity     = require('./app/models/exampledbentity');
-mongoose.connect('mongodb://node:node@novus.modulusmongo.net:27017/Iganiq8o');
+
+if (environment == 'Development')
+{
+  mongoose.connect('mongodb://localhost/test');  
+}else{
+  mongoose.connect('mongodb://MyMongoDb/test');  
+}
+
+mongoose.connection.on('error', console.error.bind(console, `connection error: Environmnet=> ${environment}`));
+mongoose.connection.once('open', function callback () {
+  console.log("Connected To MongoDb Instance");
+});
 // error handler
 app.use(function(err, req, res, next) {
   // set locals, only providing error in development
@@ -41,9 +53,10 @@ app.use(function(err, req, res, next) {
 
   // render the error page
   res.status(err.status || 500);
-  res.render('error');
+  
+  res.json({ message: 'Error!',err:err.message, status:err.status });
 });
 
 app.listen(port);
-console.log('App Listenin On Port:' + port);
+console.log('App Listening On Port:' + port);
 module.exports = app;

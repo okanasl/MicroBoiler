@@ -7,4 +7,4 @@ var EntitySchema   = new Schema({
     description:String
 });
 
-module.exports = mongoose.model('Bear', EntitySchema);
+module.exports = mongoose.model('Entity', EntitySchema);
