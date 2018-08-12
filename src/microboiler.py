@@ -404,7 +404,7 @@ def BuildNginxConfiguration(server, api_services,clients, identity_services):
             nginx.Key('listen', '80'),
             nginx.Key('server_name', str.lower(api_service['name'])+'.localhost'),
         )
-        proxy_pass = 'http://'+api_service['name']+':'+':'.join(map(str,(api_service['ports'])))+'/'
+        proxy_pass = 'http://'+api_service['name']+':'+str(api_service['port'])+'/'
         location = nginx.Location(
             '/',
             nginx.Key('proxy_http_version', '1.1'),
@@ -423,7 +423,7 @@ def BuildNginxConfiguration(server, api_services,clients, identity_services):
             nginx.Key('server_name', str.lower(i_service['name'])+'.localhost'),
         )
         #pylint: disable-msg=E1121
-        proxy_pass = 'http://'+i_service['name']+':'+':'.join(map(str,(i_service['ports'])))+'/'
+        proxy_pass = 'http://'+i_service['name']+':'+str(i_service['port'])+'/'
         location = nginx.Location(
             '/',
             nginx.Key('proxy_http_version', '1.1'),
@@ -442,7 +442,7 @@ def BuildNginxConfiguration(server, api_services,clients, identity_services):
             nginx.Key('server_name', str.lower(client['name'])+'.localhost'),
         )
         #pylint: disable-msg=E1121
-        proxy_pass = 'http://'+client['name']+':'+':'.join(map(str,(client['ports'])))+'/'
+        proxy_pass = 'http://'+client['name']+':'+str(client['port'])+'/'
         location = nginx.Location(
             '/',
             nginx.Key('proxy_http_version', '1.1'),
@@ -810,7 +810,7 @@ def HandleIs4ClientConfiguration(clients, identity_service, is4_copy_folder):
             client_config_as_cs = client_config_as_cs.replace('{{client:scopes}}',scope_val)
         client_config_as_cs += ',\n'
         # Dev configuration
-        client_host = 'http://localhost:'+str(client['ports'][0])
+        client_host = 'http://localhost:'+str(client['port'])
         redirect_url_templ_val = ( InDbQ(client_host) +',\n' 
         + '\t\t\t\t\t\t'+ InDbQ(client_host+'/silent-renew.html') +',\n' 
         + '\t\t\t\t\t\t'+ InDbQ(client_host+'/login-callback.html')) 
@@ -1030,7 +1030,7 @@ def HandleEventBusForIs4(i_srv, is4_copy_folder):
 def HandleIs4DockerFile(identity_service, is4_copy_folder):
     docker_file_path = os.path.join(is4_copy_folder,'Dockerfile')
     docker_replace_dict = {}
-    docker_replace_dict['{{port}}'] = str(identity_service['ports'][0])
+    docker_replace_dict['{{port}}'] = str(identity_service['port'])
     replace_template_file(docker_file_path,docker_replace_dict)
 def HandleStartupForIs4(identity_service, is4_copy_folder):
     startup_file_path = os.path.join(is4_copy_folder,'src','Host','Startup.cs')
@@ -1055,8 +1055,8 @@ def HandleIs4DockerCompose(identity_service, is4_copy_folder):
     }
     is4_docker_props['links'].append(identity_service['database']['provider'])
     is4_docker_props['depends_on'].append(identity_service['database']['provider'])
-    for port in identity_service['ports']:
-        is4_docker_props['ports'].append(str(port)+':'+str(port))
+    if 'port' in identity_service:        
+        is4_docker_props['ports'].append(str(identity_service['port'])+':'+str(identity_service['port']))
     eventbus_enabled = 'eventbus' in identity_service
     if eventbus_enabled:
         eb_provider = identity_service['eventbus']['provider']        
@@ -1174,7 +1174,7 @@ def HandleDotnetApiStartup(dotnet_service, api_copy_folder):
         else:
             replaceDict['{{authorization:api_name}}'] = dotnet_service['name']        
             replaceDict['{{authorization:authority}}'] = str.lower(identity_instance['name'])+'.localhost'
-            replaceDict['{{authorization:authority-dev}}'] = 'http://localhost:'+str(identity_instance['ports'][0])
+            replaceDict['{{authorization:authority-dev}}'] = 'http://localhost:'+str(identity_instance['port'])
             if 'api_secret' in dotnet_service['authorization']:
                 replaceDict['{{authorization:api_secret}}'] = dotnet_service['authorization']['secrets'][0]
             else:
@@ -1255,7 +1255,7 @@ def HandleDotnetApiNameSpaceAndCleaning(dotnet_service, api_copy_folder):
 def HandleDotnetApiDockerFile(dotnet_service, api_copy_folder):
     docker_file_path = os.path.join(api_copy_folder,'Dockerfile')
     docker_replace_dict = {}
-    docker_replace_dict['{{port}}'] = str(dotnet_service['ports'][0])
+    docker_replace_dict['{{port}}'] = str(dotnet_service['port'])
     docker_replace_dict['{{project_name}}'] = to_camelcase(dotnet_service['name'])
     replace_template_file(docker_file_path,docker_replace_dict)
     if 'database' in dotnet_service:
@@ -1284,9 +1284,8 @@ def HandleDotnetApiDockerCompose(dotnet_service,api_copy_folder):
     if 'database' in dotnet_service:
         docker_props['links'].append(dotnet_service['database']['provider'])
         docker_props['depends_on'].append(dotnet_service['database']['provider'])
-    if 'ports' in dotnet_service:
-        for port in dotnet_service['ports']:
-            docker_props['ports'].append(str(port)+':'+str(port))
+    if 'port' in dotnet_service:
+        docker_props['ports'].append(str(dotnet_service['port'])+':'+str(dotnet_service['port']))
     eventbus_enabled = 'eventbus' in dotnet_service
     if eventbus_enabled:
         eb_provider = dotnet_service['eventbus']['provider']        
@@ -1331,11 +1330,11 @@ def HandleDotnetApiService(api_service_options):
     HandleDotnetApiDockerFile(api_service_options,api_copy_folder)
     HandleDotnetApiDockerCompose(api_service_options,api_copy_folder)
 def HandleNodeJsData(api_service_options,api_copy_folder):
-    app_js_file_path = os.path.join(api_copy_folder,'app.js')
-    env_file_path = os.path.join(api_copy_folder,'.env')
-    models_folder_path =  os.path.join(api_copy_folder,'models')
-    package_json_file_path =  os.path.join(api_copy_folder,'package.json')
-    db_entity_route_file_path =  os.path.join(api_copy_folder,'routes','entity.js')
+    app_js_file_path = os.path.join(api_copy_folder,'src','app.js')
+    env_file_path = os.path.join(api_copy_folder,'src','.env')
+    models_folder_path =  os.path.join(api_copy_folder,'src','models')
+    package_json_file_path =  os.path.join(api_copy_folder,'src','package.json')
+    db_entity_route_file_path =  os.path.join(api_copy_folder,'src','routes','entity.js')
     mongo_db_packages = ['mongoose']
     database_enabled = 'database' in api_service_options
     if (database_enabled):        
@@ -1353,11 +1352,11 @@ def HandleNodeJsData(api_service_options,api_copy_folder):
             shutil.rmtree(models_folder_path,ignore_errors=True)    
         RemovePackagesFromJson(package_json_file_path,mongo_db_packages)
 def HandleNodeJsAuthorization(api_service_options,api_copy_folder):
-    app_js_file_path = os.path.join(api_copy_folder,'app.js')
-    env_file_path = os.path.join(api_copy_folder,'.env')
-    authorize_middleware_file_path = os.path.join(api_copy_folder,'middlewares','authorize.js')
-    package_json_file_path =  os.path.join(api_copy_folder,'package.json')
-    auth_test_route_file_path =  os.path.join(api_copy_folder,'routes','authtest.js')
+    app_js_file_path = os.path.join(api_copy_folder,'src','app.js')
+    env_file_path = os.path.join(api_copy_folder,'src','.env')
+    authorize_middleware_file_path = os.path.join(api_copy_folder,'src','middlewares','authorize.js')
+    package_json_file_path =  os.path.join(api_copy_folder,'src','package.json')
+    auth_test_route_file_path =  os.path.join(api_copy_folder,'src','routes','authtest.js')
     authorization_enabled = 'authorization' in api_service_options
     if (authorization_enabled):
         identity_instance = FindIdentityServiceWithName(api_service_options['authorization']['issuer'])
@@ -1368,7 +1367,7 @@ def HandleNodeJsAuthorization(api_service_options,api_copy_folder):
             # Configure authorize middleware
             replace_dict = {
                 '{{issuer_host_dev}}': str.lower(identity_instance['name'])+'.localhost',
-                '{{issuer_host}}': 'http://localhost:'+str(identity_instance['ports'][0])
+                '{{issuer_host}}': 'http://localhost:'+str(identity_instance['port'])
             }
             if 'secrets' in api_service_options['authorization']:
                 if len(api_service_options['authorization']['secrets']) > 0:
@@ -1384,10 +1383,32 @@ def HandleNodeJsAuthorization(api_service_options,api_copy_folder):
         # Remove authorize middleware file
         if os.path.isfile(authorize_middleware_file_path):
             os.remove(authorize_middleware_file_path)
-
+def HandleNodeJsDocker(api_service_options,api_copy_folder):
+    dockerfile_path = os.path.join(api_copy_folder,'Dockerfile')
+    CamelCaseName = to_camelcase(api_service_options['name'])
+    replace_dict = {}
+    if 'port' in api_service_options:
+        replace_dict['{{PORT}}'] =  str(api_service_options['port'])
+    replace_template_file(dockerfile_path,replace_dict)
+    docker_options = {
+        api_service_options['name']:{
+            'image': api_service_options['name'].lower(),
+            'build': {
+                'context': 'src/ApiServices/'+CamelCaseName,
+                'dockerfile': 'Dockerfile'
+            },
+            'networks': ['localnet'],
+            'ports': []
+        }
+    }
+    if 'port' in api_service_options:
+        docker_options[api_service_options['name']]['ports'].append(str(api_service_options['port'])+':'+str(api_service_options['port']))
+    if 'docker_compose_override' in api_service_options:
+        docker_options[api_service_options['name']].update(api_service_options['docker_compose_override'])  
+    dockerOptions['services'][api_service_options['name']] = docker_options[api_service_options['name']]
 def HandleNodeWebApi(api_service_options):
     CamelCaseName = to_camelcase(api_service_options['name'])
-    api_template_folder = os.path.join(apiServicesPath,'express_web_api','src')
+    api_template_folder = os.path.join(apiServicesPath,'express_web_api')
     api_copy_folder = os.path.join(srcDir,'ApiServices',CamelCaseName)
     if os.path.isdir(api_copy_folder):
         shutil.rmtree(api_copy_folder,ignore_errors=True)
@@ -1397,6 +1418,7 @@ def HandleNodeWebApi(api_service_options):
     
     HandleNodeJsData(api_service_options,api_copy_folder)
     HandleNodeJsAuthorization(api_service_options,api_copy_folder)
+    HandleNodeJsDocker(api_service_options,api_copy_folder)
 def HandleApiServices(api_services):
     print ('Scaffolding Api Services')
     for api_service in api_services:
@@ -1422,8 +1444,8 @@ def HandleEnvironmentForAuthConfig(client_options, copy_folder):
             '{{auth:client_id}}': client_options['name']
         }
         dev_replace_dict = {
-            '{{auth:stsServer}}': 'http://localhost:'+str(identity_instance['ports'][0]),
-            '{{auth:clientUrl}}': 'http://localhost:'+str(client_options['ports'][0]),
+            '{{auth:stsServer}}': 'http://localhost:'+str(identity_instance['port']),
+            '{{auth:clientUrl}}': 'http://localhost:'+str(client_options['port']),
             '{{auth:client_id}}': client_options['name']+'dev'
         }
         if 'scopes' in client_options['authorization']:
@@ -1437,7 +1459,7 @@ def HandleEnvironmentForAuthConfig(client_options, copy_folder):
 def HandleDockerfileForAngularSsr(client_options, copy_folder):
     dockerfile_path = os.path.join(copy_folder,'Dockerfile')
     replace_dict = {
-        '{{PORT}}': str(client_options['ports'][0])
+        '{{PORT}}': str(client_options['port'])
     }
     replace_template_file(dockerfile_path,replace_dict)
 def HandleDockerComposeForAngularSsr(client_options):
@@ -1453,9 +1475,8 @@ def HandleDockerComposeForAngularSsr(client_options):
             'ports': []
         }
     }
-    if 'ports' in client_options:        
-        for port in client_options['ports']:
-            docker_options[client_options['name']]['ports'].append(str(port)+':'+str(port))
+    if 'port' in client_options:        
+        docker_options[client_options['name']]['ports'].append(str(client_options['port'])+':'+str(client_options['port']))
     dockerOptions['services'][client_options['name']] = docker_options[client_options['name']]
 def HandleAngular6SsrAuth(client_options, copy_folder):
     HandleEnvironmentForAuthConfig(client_options, copy_folder)
