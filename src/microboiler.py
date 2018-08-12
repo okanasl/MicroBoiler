@@ -1340,7 +1340,7 @@ def HandleNodeJsData(api_service_options,api_copy_folder):
             connection_string, connection_string_dev = BuildMongooseConnectionString(api_service_options, database_instance)
             replace_dict = {
                 '{{mongoose_connection_dev}}': connection_string_dev,
-                '{{mongoose_connection_dev}}': connection_string
+                '{{mongoose_connection}}': connection_string
             }
             replace_template_file(app_js_file_path,replace_dict)
             filter_sub_region(app_js_file_path,'database',database_instance['type'])
