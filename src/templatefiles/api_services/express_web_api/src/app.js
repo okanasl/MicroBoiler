@@ -34,7 +34,10 @@ app.use(cookieParser());
 app.use('/entity', entityRouter);
 //& end (database)
 //& end (database:mongodb)
+
+//& region (authorization)
 app.use('/authtest', authtestRouter);
+//& region (authorization)
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
@@ -56,7 +59,9 @@ if (environment == 'Development')
   //& end (database)
 }else{
   //& region (database)
+  //& region (database:mongodb)
   mongoose.connect('mongodb://MyMongoDb/test');  
+  //& end (database:mongodb)
   //& end (database)
 }
 //& region (database)

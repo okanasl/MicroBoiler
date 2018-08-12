@@ -4,6 +4,7 @@ import readline
 import fileinput
 import re
 import shlex
+import json
 import shutil
 import yaml
 import os
@@ -118,6 +119,13 @@ def BuildDatabaseConnectionString(database_type,server_host,database_name,user,p
     return conn_string, conn_string_dev
 def BuildRedisConnectionString(redis_options):
     return redis_options['name'], '127.0.0.1'
+def RemovePackagesFromJson(file,packages):
+    with open(file) as f:
+        package_info = json.load(f)
+        for package in packages:
+            package_info['dependencies'].pop(package, None)
+        f.seek(0)
+        json.dump(file)
 # end helpers
 # service helpers
 
@@ -1319,43 +1327,73 @@ def HandleDotnetApiService(api_service_options):
     HandleDotnetApiNameSpaceAndCleaning(api_service_options,api_copy_folder)
     HandleDotnetApiDockerFile(api_service_options,api_copy_folder)
     HandleDotnetApiDockerCompose(api_service_options,api_copy_folder)
+def HandleNodeJsData(api_service_options,api_copy_folder):
+    app_js_file_path = os.path.join(api_copy_folder,'src','app.js')
+    env_file_path = os.path.join(api_copy_folder,'src','.env')
+    models_folder_path =  os.path.join(api_copy_folder,'src','models')
+    package_json_file_path =  os.path.join(api_copy_folder,'src','package.json')
+    db_entity_route_file_path =  os.path.join(api_copy_folder,'src','routes','entity.js')
+    mongo_db_packages = ['mongoose']
+    database_enabled = 'database' in api_service_options
+    if (database_enabled):        
+        database_provider = api_service_options['database']['provider']
+        database_instance = FindDatabaseWithName(database_provider)
+        if database_instance['type'] == 'mongodb':
+            filter_sub_region(app_js_file_path,'database',database_instance['type'])
+        else:
+            RemovePackagesFromJson(package_json_file_path,mongo_db_packages)
+            if os.path.isfile(db_entity_route_file_path):
+                os.remove(db_entity_route_file_path)
+    else:        
+        filter_region_with_tag(app_js_file_path,'database')
+        if os.path.isdir(models_folder_path):
+            shutil.rmtree(models_folder_path,ignore_errors=True)    
+        RemovePackagesFromJson(package_json_file_path,mongo_db_packages)
+def HandleNodeJsAuthorization(api_service_options,api_copy_folder):
+    app_js_file_path = os.path.join(api_copy_folder,'src','app.js')
+    env_file_path = os.path.join(api_copy_folder,'src','.env')
+    authorize_middleware_file_path = os.path.join(api_copy_folder,'src','middlewares','authorize.js')
+    package_json_file_path =  os.path.join(api_copy_folder,'src','package.json')
+    auth_test_route_file_path =  os.path.join(api_copy_folder,'src','routes','authtest.js')
+    authorization_enabled = 'authorization' in api_service_options
+    if (authorization_enabled):
+        identity_instance = FindIdentityServiceWithName(api_service_options['authorization']['issuer'])
+        identity_instance_type = identity_instance['type']
+        if identity_instance_type == 'identityserver4':
+            # Filter App.py For authorization:identityserver4
+            filter_sub_region(app_js_file_path,'database',identity_instance_type)
+            # Configure authorize middleware
+
+            replace_dict = {
+                '{{issuer_host_dev}}': str.lower(identity_instance['name'])+'.localhost'
+                '{{issuer_host}}': 'http://localhost:'+str(identity_instance['ports'][0])
+            }
+            if 'secrets' in api_service_options['authorization']:
+                if len(api_service_options['authorization']['secrets']) > 0:
+                    replace_dict['{{api_secret}}'] = api_service_options['authorization']['secrets'][0]
+                else:
+                    replace_dict['{{api_secret}}'] = 'secret'
+            else:
+                replace_dict['{{api_secret}}'] = 'secret'
+    else:
+        # Filter App.py For Authorization
+        filter_region_with_tag(app_js_file_path,'authorization')
+        # Remove authorize middleware file
+        if os.path.isfile(authorize_middleware_file_path):
+            os.remove(authorize_middleware_file_path)
+
 def HandleNodeWebApi(api_service_opions):
     CamelCaseName = to_camelcase(api_service_options['name'])
-    api_template_folder = os.path.join(apiServicesPath,'dotnet_web_api','src')
-    api_copy_folder = os.path.join(srcDir,'ApiServices',CamelCaseName )
+    api_template_folder = os.path.join(apiServicesPath,'node_web_api','src')
+    api_copy_folder = os.path.join(srcDir,'ApiServices',CamelCaseName)
     if os.path.isdir(api_copy_folder):
         shutil.rmtree(api_copy_folder,ignore_errors=True)
     # TODO: Swap shutil operations
-    #shutil.copytree(api_template_folder,api_copy_folder,ignore=shutil.ignore_patterns('bin*','obj*'))
+    #shutil.copytree(api_template_folder,api_copy_folder,ignore=shutil.ignore_patterns('node_modules*'))
     shutil.copytree(api_template_folder,api_copy_folder)
-    api_src_folder = os.path.join(srcDir,'ApiServices',CamelCaseName,'DotnetWebApi')
-    api_src_rename_folder = os.path.join(srcDir,'ApiServices',CamelCaseName,'src')
-    api_csproj_folder = os.path.join(srcDir,'ApiServices',CamelCaseName,'src','DotnetWebApi.csproj')
-    api_csproj_rename_folder = os.path.join(srcDir,'ApiServices',CamelCaseName,'src',CamelCaseName+'.csproj')
     
-    if not os.path.isdir(api_src_rename_folder):
-        shutil.copytree(api_src_folder,api_src_rename_folder)
-        shutil.rmtree( api_src_folder,ignore_errors=True)
-    else: 
-        shutil.rmtree( api_src_rename_folder,ignore_errors=True)
-        shutil.copytree(api_src_folder,api_src_rename_folder)
-
-    if not os.path.exists(api_csproj_rename_folder):
-        shutil.copy(api_csproj_folder,api_csproj_rename_folder)
-        os.remove( api_csproj_folder)
-    else: 
-        os.remove(api_csproj_rename_folder)
-        shutil.copy(api_csproj_folder,api_csproj_rename_folder)
-
-
-    HandleDotnetApiCsproj(api_service_options,api_copy_folder)
-    HandleDotnetApiStartup(api_service_options,api_copy_folder)
-    HandleDotnetApiProgramFile(api_service_options,api_copy_folder)
-    HandleDotnetApiDbContext(api_service_options,api_copy_folder)
-    HandleDotnetApiNameSpaceAndCleaning(api_service_options,api_copy_folder)
-    HandleDotnetApiDockerFile(api_service_options,api_copy_folder)
-    HandleDotnetApiDockerCompose(api_service_options,api_copy_folder)
-    
+    HandleNodeJsData(api_service_options,api_copy_folder)
+    HandleNodeJsAuthorization(api_service_options,api_copy_folder)
 def HandleApiServices(api_services):
     print ('Scaffolding Api Services')
     for api_service in api_services:
