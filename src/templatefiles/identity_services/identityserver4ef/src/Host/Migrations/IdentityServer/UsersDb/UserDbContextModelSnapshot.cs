@@ -16,7 +16,7 @@ namespace Host.Migrations.IdentityServer.UsersDb
 #pragma warning disable 612, 618
             modelBuilder
                 .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.SerialColumn)
-                .HasAnnotation("ProductVersion", "2.1.0-rtm-30799")
+                .HasAnnotation("ProductVersion", "2.1.1-rtm-30846")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             modelBuilder.Entity("IdentityServer4.Entities.ApplicationRole", b =>
@@ -52,11 +52,11 @@ namespace Host.Migrations.IdentityServer.UsersDb
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken();
 
-                    b.Property<string>("CoverImage");
-
                     b.Property<DateTime>("DateActive");
 
                     b.Property<DateTime>("DateAdd");
+
+                    b.Property<DateTime>("DateModify");
 
                     b.Property<string>("Email")
                         .HasMaxLength(256);

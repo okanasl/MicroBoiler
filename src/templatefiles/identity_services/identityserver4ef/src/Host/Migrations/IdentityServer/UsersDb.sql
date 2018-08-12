@@ -32,9 +32,9 @@ CREATE TABLE "AspNetUsers" (
     "LastName" text NULL,
     "IsSoftDeleted" boolean NOT NULL,
     "ProfileImage" text NULL,
-    "CoverImage" text NULL,
     "DateAdd" timestamp without time zone NOT NULL,
     "DateActive" timestamp without time zone NOT NULL,
+    "DateModify" timestamp without time zone NOT NULL,
     CONSTRAINT "PK_AspNetUsers" PRIMARY KEY ("Id")
 );
 
@@ -106,5 +106,5 @@ CREATE INDEX "EmailIndex" ON "AspNetUsers" ("NormalizedEmail");
 CREATE UNIQUE INDEX "UserNameIndex" ON "AspNetUsers" ("NormalizedUserName");
 
 INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
-VALUES ('20180611072855_Users', '2.1.0-rtm-30799');
+VALUES ('20180812232843_Users', '2.1.1-rtm-30846');
 

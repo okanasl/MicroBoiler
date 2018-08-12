@@ -1396,7 +1396,7 @@ def HandleNodeJsDocker(api_service_options,api_copy_folder):
         api_service_options['name']:{
             'image': api_service_options['name'].lower(),
             'build': {
-                'context': 'src/ApiServices/'+CamelCaseName,
+                'context': 'src/ApiServices/'+CamelCaseName+'/src',
                 'dockerfile': 'Dockerfile'
             },
             'networks': ['localnet'],

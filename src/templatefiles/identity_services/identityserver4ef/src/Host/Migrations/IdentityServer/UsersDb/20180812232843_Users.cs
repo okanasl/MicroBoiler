@@ -45,9 +45,9 @@ namespace Host.Migrations.IdentityServer.UsersDb
                     LastName = table.Column<string>(nullable: true),
                     IsSoftDeleted = table.Column<bool>(nullable: false),
                     ProfileImage = table.Column<string>(nullable: true),
-                    CoverImage = table.Column<string>(nullable: true),
                     DateAdd = table.Column<DateTime>(nullable: false),
-                    DateActive = table.Column<DateTime>(nullable: false)
+                    DateActive = table.Column<DateTime>(nullable: false),
+                    DateModify = table.Column<DateTime>(nullable: false)
                 },
                 constraints: table =>
                 {
