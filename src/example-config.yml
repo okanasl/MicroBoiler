@@ -34,8 +34,8 @@ databases:
       docker_compose_override: # optional (default values) set yours to override
         image: postgres
         container_name: my_postgre_container
-        volumes:
-           - ./postgres-data:/var/lib/postgresql/data
+        #volumes:
+        #   - ./postgres-data:/var/lib/postgresql/data
         environment:
           POSTGRES_PASSWORD: machine
           POSTGRES_USER: doom
@@ -44,22 +44,20 @@ databases:
       type: mongodb
       name: MyMongoDb
       ports: [27017]
+      username: doom
+      password: machine
       docker_compose_override: # optional (default values) set yours to override
         image: mongo:latest
         container_name: my_mongodb_container
         environment:
           - MONGO_DATA_DIR=/data/db
           - MONGO_LOG_DIR=/dev/null
-          - MONGODB_USER=doom
-          - MONGODB_PASS=machine
-        environment:
-          POSTGRES_PASSWORD: machine
-          POSTGRES_USER: doom
-          POSTGRES_DB: dev   
    - mysql_instance:
       type: mysql # required
       name: my_mysql_server # required
       ports: [3306] # default port
+      username: doom # default username
+      password: machine # default username
       docker_compose_override: # optional (default values below)
         container_name: mysqlc
         command: mysqld --user=root --verbose
@@ -83,8 +81,8 @@ eventbus:
       docker_compose_override: # defalt docker override options
         image: rabbitmq:3-management-alpine
         container_name: rabbitmqc
-        volumes:
-          - rabbit-volume:/var/lib/rabbitmq
+        #volumes:
+        #  - rabbit-volume:/var/lib/rabbitmq
         ports:
           - "15672:15672"
           - "5672:5672"

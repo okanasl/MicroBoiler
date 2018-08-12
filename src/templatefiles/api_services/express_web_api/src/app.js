@@ -54,13 +54,13 @@ if (environment == 'Development')
 {
   //& region (database)
   //& region (database:mongodb)
-  mongoose.connect('mongodb://localhost/test');  
+  mongoose.connect('{{mongoose_connection_dev}}');  
   //& end (database:mongodb)
   //& end (database)
 }else{
   //& region (database)
   //& region (database:mongodb)
-  mongoose.connect('mongodb://MyMongoDb/test');  
+  mongoose.connect('{{mongoose_connection}}');  
   //& end (database:mongodb)
   //& end (database)
 }

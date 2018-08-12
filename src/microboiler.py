@@ -104,6 +104,15 @@ def Clear_File_Region_Marks(file):
             
     except StopIteration:
         return
+def BuildMongooseConnectionString(api_options,mongodb_options):
+    db_name = api_options['database']['database_name']
+    db_host_dev = 'localhost'
+    db_host = mongodb_options['name']
+    db_username = mongodb_options['username']
+    db_password = mongodb_options['password']
+    conn_string = 'mongodb://{0}:{1}@{2}/{3}'.format(db_username,db_password,db_host,db_name)
+    conn_string_dev=  'mongodb://{0}:{1}@{2}/{3}'.format(db_username,db_password,db_host_dev,db_name)
+    return conn_string, conn_string_dev
 def BuildDatabaseConnectionString(database_type,server_host,database_name,user,password):
     conn_string = ""
     conn_string_dev=""
@@ -113,6 +122,9 @@ def BuildDatabaseConnectionString(database_type,server_host,database_name,user,p
     elif (database_type == 'postgresql'):
         conn_string ="Server={0};Database={1};Username={2};Password={3}".format(server_host,database_name,user,password)
         conn_string_dev = "Server={0};Database={1};Username={2};Password={3}".format('localhost',database_name,user,password)
+    elif (database_type == 'mssql'):
+        conn_string = "Data Source={0};Initial Catalog={1};User Id={2};Password={3}".format(server_host,database_name,user,password)
+        conn_string_dev = "Data Source={0};Initial Catalog={1};User Id={2};Password={3}".format('localhost',database_name,user,password)
     elif (database_type == 'mssql'):
         conn_string = "Data Source={0};Initial Catalog={1};User Id={2};Password={3}".format(server_host,database_name,user,password)
         conn_string_dev = "Data Source={0};Initial Catalog={1};User Id={2};Password={3}".format('localhost',database_name,user,password)
@@ -518,14 +530,17 @@ def HandlePostgreSql(db_options):
             'ports': ['5432:5432'],
             'environment': {
                 'POSTGRES_DB': 'dev',
-                'POSTGRES_USER': 'doom',
-                'POSTGRES_PASSWORD': 'machine',
             }
         }
     }
+    
     if 'docker_compose_override' in db_options:
         default_postgre_options[db_options['name']].update(db_options['docker_compose_override'])  
-
+    if 'username' in db_options:
+        default_postgre_options[db_options['name']]['environment']['POSTGRES_USER'] = db_options['username']
+    if 'password' in db_options:
+        default_postgre_options[db_options['name']]['environment']['POSTGRES_PASSWORD'] = db_options['password']
+    
     dockerOptions['services'][db_options['name']] = default_postgre_options[db_options['name']]
 
 def HandleMySql(db_options):
@@ -542,16 +557,18 @@ def HandleMySql(db_options):
             'networks':['localnet'],            
             'ports': ['3306:3306'],
             'environment': {
-                'MYSQL_USER': '"doom"',
-                'MYSQL_PASSWORD': '"machine"',
                 'MYSQL_ROOT_HOST': '"%"',
-                'MYSQL_ROOT_PASSWORD': '"machine"',
                 'MYSQL_ALLOW_EMPTY_PASSWORD': '"false"'
             }
         }
     }
     if 'docker_compose_override' in db_options:
         default_mysql_options[db_options['name']].update(db_options['docker_compose_override'])    
+    if 'username' in db_options:
+        default_mysql_options[db_options['name']]['environment']['MYSQL_USER'] = db_options['username']
+    if 'password' in db_options:
+        default_mysql_options[db_options['name']]['environment']['MYSQL_PASSWORD'] = db_options['password']
+        default_mysql_options[db_options['name']]['environment']['MYSQL_ROOT_PASSWORD'] = db_options['password']
     dockerOptions['services'][db_options['name']] = default_mysql_options[db_options['name']]
 def FindMongoUsingServiceNames(mongo_name):
     api_services = []
@@ -602,8 +619,9 @@ def HandleRedisDatabase(db_options):
         'links':[],
         'depends_on':[],
         'networks': ['localnet'],
-        'volumes': ['rabbitmq-volume:'+docker_volume_dir],
+        'volumes': ['redis-volume:'+docker_volume_dir],
     }
+    dockerOptions['volumes']['redis-volume'] = {}
     # Add Ports
     if 'ports' in db_options:
         for port in db_options['ports']:
@@ -622,10 +640,6 @@ def HandleMongoDb(db_options):
         os.makedirs(mongo_docker_volume_dir)
     mongo_docker_options = {
         'image': db_options['name'].lower(),
-        'build': {
-            'context': db_options['name']+'/',
-            'dockerfile': 'Dockerfile',
-        },
         'container_name': db_options['name'],
         'volumes': ['mongodb-volume:'+mongo_docker_volume_dir],
         'ports':[],
@@ -970,20 +984,11 @@ def BuildConnStringForIs4(identity_options):
     config_connection_string = ''
     user = 'doom'
     password = 'machine'
-    if database_type=='mysql':
-        if 'docker_compose_override' in database_instance:
-            if 'environment' in database_instance['docker_compose_override']:
-                if 'MYSQL_USER' in database_instance['docker_compose_override']['environment']:
-                    user = database_instance['docker_compose_override']['environment']['MYSQL_USER']
-                if 'MYSQL_PASSWORD' in database_instance['docker_compose_override']['environment']:
-                    password = database_instance['docker_compose_override']['environment']['MYSQL_PASSWORD']
-    if database_type=='postgresql':
-        if 'docker_compose_override' in database_instance:
-            if 'environment' in database_instance['docker_compose_override']:
-                if 'POSTGRES_USER' in database_instance['docker_compose_override']['environment']:
-                    user = database_instance['docker_compose_override']['environment']['POSTGRES_USER']
-                if 'POSTGRES_PASSWORD' in database_instance['docker_compose_override']['environment']:
-                    password = database_instance['docker_compose_override']['environment']['POSTGRES_PASSWORD']
+    if database_type=='mysql' or database_type=='postgresql':
+        if 'username' in database_instance:
+            user = database_instance['username']
+        if 'password' in database_instance:
+            password = database_instance['password']    
     user_connection_string, user_connection_string_dev = BuildDatabaseConnectionString(database_type,database_instance['name'],identity_options['name'].lower()+'_users',user,password)        
     config_connection_string, config_connection_string_dev = BuildDatabaseConnectionString(database_type,database_instance['name'],identity_options['name'].lower()+'_config',user,password)
     conn_strings = {}
@@ -1113,20 +1118,11 @@ def BuildConnStringForDotnetApi(dotnet_options):
     connection_string ='' 
     user = 'doom'
     password = 'machine'
-    if database_type=='mysql':
-        if 'docker_compose_override' in database_instance:
-            if 'environment' in database_instance['docker_compose_override']:
-                if 'MYSQL_USER' in database_instance['docker_compose_override']['environment']:
-                    user = database_instance['docker_compose_override']['environment']['MYSQL_USER']
-                if 'MYSQL_PASSWORD' in database_instance['docker_compose_override']['environment']:
-                    password = database_instance['docker_compose_override']['environment']['MYSQL_PASSWORD']
-    if database_type=='postgresql':
-        if 'docker_compose_override' in database_instance:
-            if 'environment' in database_instance['docker_compose_override']:
-                if 'POSTGRES_USER' in database_instance['docker_compose_override']['environment']:
-                    user = database_instance['docker_compose_override']['environment']['POSTGRES_USER']
-                if 'POSTGRES_PASSWORD' in database_instance['docker_compose_override']['environment']:
-                    password = database_instance['docker_compose_override']['environment']['POSTGRES_PASSWORD']
+    if database_type=='mysql' or database_type=='postgresql':
+        if 'username' in database_instance:
+            user = database_instance['username']
+        if 'password' in database_instance:
+            password = database_instance['password']    
     connection_string, connection_string_dev = BuildDatabaseConnectionString(database_type,database_instance['name'],dotnet_options['name'],user,password)        
     
     return connection_string , connection_string_dev
@@ -1341,6 +1337,12 @@ def HandleNodeJsData(api_service_options,api_copy_folder):
         database_provider = api_service_options['database']['provider']
         database_instance = FindDatabaseWithName(database_provider)
         if database_instance['type'] == 'mongodb':
+            connection_string, connection_string_dev = BuildMongooseConnectionString(api_service_options, database_instance)
+            replace_dict = {
+                '{{mongoose_connection_dev}}': connection_string_dev,
+                '{{mongoose_connection_dev}}': connection_string
+            }
+            replace_template_file(app_js_file_path,replace_dict)
             filter_sub_region(app_js_file_path,'database',database_instance['type'])
         else:
             RemovePackagesFromJson(package_json_file_path,mongo_db_packages)
@@ -1362,7 +1364,7 @@ def HandleNodeJsAuthorization(api_service_options,api_copy_folder):
         identity_instance = FindIdentityServiceWithName(api_service_options['authorization']['issuer'])
         identity_instance_type = identity_instance['type']
         if identity_instance_type == 'identityserver4':
-            # Filter App.py For authorization:identityserver4
+            # Filter App.js For authorization:identityserver4
             filter_sub_region(app_js_file_path,'database',identity_instance_type)
             # Configure authorize middleware
             replace_dict = {
