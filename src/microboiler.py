@@ -125,7 +125,7 @@ def RemovePackagesFromJson(file,packages):
         for package in packages:
             package_info['dependencies'].pop(package, None)
         f.seek(0)
-        json.dump(file)
+        json.dump(package_info,f)
 # end helpers
 # service helpers
 
@@ -557,7 +557,7 @@ def FindMongoUsingServiceNames(mongo_name):
     api_services = []
     if 'api_services' not in projectOptions:
         return api_services
-    if len(projectOptions['api_services'] == 0):
+    if len(projectOptions['api_services'])== 0:
         return api_services
     for service in projectOptions['api_services']:
         for key, value in service.items():            
@@ -581,6 +581,9 @@ def FindRedisUsingServiceNames(redis_name):
     return services
 
 def HandleRedisDatabase(db_options):
+    docker_volume_dir = os.path.normpath(os.path.join(projectDir,'docker_volumes','redis',db_options['name']))
+    if not os.path.isdir(docker_volume_dir):
+        os.makedirs(docker_volume_dir)
     redis_template_folder = os.path.join(databasesPath,'redis')
     redis_project_folder = os.path.join(projectDir, db_options['name'])
     if os.path.isdir(redis_project_folder):
@@ -1328,11 +1331,11 @@ def HandleDotnetApiService(api_service_options):
     HandleDotnetApiDockerFile(api_service_options,api_copy_folder)
     HandleDotnetApiDockerCompose(api_service_options,api_copy_folder)
 def HandleNodeJsData(api_service_options,api_copy_folder):
-    app_js_file_path = os.path.join(api_copy_folder,'src','app.js')
-    env_file_path = os.path.join(api_copy_folder,'src','.env')
-    models_folder_path =  os.path.join(api_copy_folder,'src','models')
-    package_json_file_path =  os.path.join(api_copy_folder,'src','package.json')
-    db_entity_route_file_path =  os.path.join(api_copy_folder,'src','routes','entity.js')
+    app_js_file_path = os.path.join(api_copy_folder,'app.js')
+    env_file_path = os.path.join(api_copy_folder,'.env')
+    models_folder_path =  os.path.join(api_copy_folder,'models')
+    package_json_file_path =  os.path.join(api_copy_folder,'package.json')
+    db_entity_route_file_path =  os.path.join(api_copy_folder,'routes','entity.js')
     mongo_db_packages = ['mongoose']
     database_enabled = 'database' in api_service_options
     if (database_enabled):        
@@ -1350,11 +1353,11 @@ def HandleNodeJsData(api_service_options,api_copy_folder):
             shutil.rmtree(models_folder_path,ignore_errors=True)    
         RemovePackagesFromJson(package_json_file_path,mongo_db_packages)
 def HandleNodeJsAuthorization(api_service_options,api_copy_folder):
-    app_js_file_path = os.path.join(api_copy_folder,'src','app.js')
-    env_file_path = os.path.join(api_copy_folder,'src','.env')
-    authorize_middleware_file_path = os.path.join(api_copy_folder,'src','middlewares','authorize.js')
-    package_json_file_path =  os.path.join(api_copy_folder,'src','package.json')
-    auth_test_route_file_path =  os.path.join(api_copy_folder,'src','routes','authtest.js')
+    app_js_file_path = os.path.join(api_copy_folder,'app.js')
+    env_file_path = os.path.join(api_copy_folder,'.env')
+    authorize_middleware_file_path = os.path.join(api_copy_folder,'middlewares','authorize.js')
+    package_json_file_path =  os.path.join(api_copy_folder,'package.json')
+    auth_test_route_file_path =  os.path.join(api_copy_folder,'routes','authtest.js')
     authorization_enabled = 'authorization' in api_service_options
     if (authorization_enabled):
         identity_instance = FindIdentityServiceWithName(api_service_options['authorization']['issuer'])
@@ -1363,9 +1366,8 @@ def HandleNodeJsAuthorization(api_service_options,api_copy_folder):
             # Filter App.py For authorization:identityserver4
             filter_sub_region(app_js_file_path,'database',identity_instance_type)
             # Configure authorize middleware
-
             replace_dict = {
-                '{{issuer_host_dev}}': str.lower(identity_instance['name'])+'.localhost'
+                '{{issuer_host_dev}}': str.lower(identity_instance['name'])+'.localhost',
                 '{{issuer_host}}': 'http://localhost:'+str(identity_instance['ports'][0])
             }
             if 'secrets' in api_service_options['authorization']:
@@ -1375,6 +1377,7 @@ def HandleNodeJsAuthorization(api_service_options,api_copy_folder):
                     replace_dict['{{api_secret}}'] = 'secret'
             else:
                 replace_dict['{{api_secret}}'] = 'secret'
+            replace_template_file(authorize_middleware_file_path,replace_dict)
     else:
         # Filter App.py For Authorization
         filter_region_with_tag(app_js_file_path,'authorization')
@@ -1382,9 +1385,9 @@ def HandleNodeJsAuthorization(api_service_options,api_copy_folder):
         if os.path.isfile(authorize_middleware_file_path):
             os.remove(authorize_middleware_file_path)
 
-def HandleNodeWebApi(api_service_opions):
+def HandleNodeWebApi(api_service_options):
     CamelCaseName = to_camelcase(api_service_options['name'])
-    api_template_folder = os.path.join(apiServicesPath,'node_web_api','src')
+    api_template_folder = os.path.join(apiServicesPath,'express_web_api','src')
     api_copy_folder = os.path.join(srcDir,'ApiServices',CamelCaseName)
     if os.path.isdir(api_copy_folder):
         shutil.rmtree(api_copy_folder,ignore_errors=True)
