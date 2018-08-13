@@ -37,9 +37,6 @@ clients:
    - web_1:
       type: angular_cli_6_ssr
       name: MicroStarter.AngularSsrClient
-      # add_npm_packages:
-      #  - name: '@ngrx/store'
-      #    version: '6.0.1'
       authorization: # using angular-oidc-client library
         issuer: MicroStarter.Identity
         scopes: 

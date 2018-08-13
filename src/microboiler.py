@@ -46,6 +46,12 @@ def replace_template_file(filepath,replace_dict):
         cs_content = cs_content.replace(key,value)
     with open(filepath,'w') as cs_file_new:
         cs_file_new.write(cs_content)
+def clear_file_region_tags(file):
+    with open(file) as f:
+        filtered = list(Clear_File_Region_Marks(f))
+        f.seek(0)
+        f.writelines(filtered)
+        f.truncate()
 def filter_region_with_tag(file,tag):
     with open(file, 'r+') as f:
         filtered = list(filter_region(f, 'region ('+tag+')', 'end ('+tag+')'))
@@ -176,19 +182,9 @@ def HandleCsprojLogging(logging_service, host_csproj_path):
         else:
             logging_type = 'microsoft'
     if(logging_enabled):
-        with open(os.path.join(host_csproj_path), 'r+') as f:
-            filtered = list(filter_sub_region(f, 'logging',logging_type))
-            f.seek(0)
-            f.writelines(filtered)
-            f.truncate()
+        filter_sub_region(host_csproj_path,'logging',logging_type)
     else:
-        logging_type_start_line = 'region (logging)'
-        logging_type_end_line = 'end (logging)'
-        with open(os.path.join(host_csproj_path), 'r+') as f:
-                filtered = list(filter_region(f, logging_type_start_line, logging_type_end_line))
-                f.seek(0)
-                f.writelines(filtered)
-                f.truncate()
+        filter_region_with_tag(host_csproj_path,'logging')
 def HandleCsprojDatabase(service_options, host_csproj_path):
     database_enabled = 'database' in service_options
     
@@ -197,17 +193,9 @@ def HandleCsprojDatabase(service_options, host_csproj_path):
         if database_instance is None:
             print ('Could not found database with name'+service_options['database']['provider'])
         database_type = database_instance['type']
-        with open(os.path.join(host_csproj_path), 'r+') as f:
-            filtered = list(filter_sub_region(f, 'database',database_type))
-            f.seek(0)
-            f.writelines(filtered)
-            f.truncate()
+        filter_sub_region(host_csproj_path,'database',database_type)
     else:
-        with open(os.path.join(host_csproj_path), 'r+') as f:
-                filtered = list(filter_region(f, 'region (database)', 'end (database)'))
-                f.seek(0)
-                f.writelines(filtered)
-                f.truncate()
+        filter_region_with_tag(host_csproj_path,'database')
 def HandleCsprojEventbus(service_options, host_csproj_path):
     eventbus_enabled = 'eventbus' in service_options
     
@@ -215,17 +203,9 @@ def HandleCsprojEventbus(service_options, host_csproj_path):
         eventbus_instance = FindEventBusWithName(service_options['eventbus']['provider'])
 
         eventbus_type = eventbus_instance['type']
-        with open(os.path.join(host_csproj_path), 'r+') as f:
-            filtered = list(filter_sub_region(f, 'eventbus',eventbus_type))
-            f.seek(0)
-            f.writelines(filtered)
-            f.truncate()
+        filter_sub_region(host_csproj_path,'eventbus',eventbus_type)
     else:
-        with open(os.path.join(host_csproj_path), 'r+') as f:
-                filtered = list(filter_region(f, 'region (eventbus)', 'end (eventbus)'))
-                f.seek(0)
-                f.writelines(filtered)
-                f.truncate()
+        filter_region_with_tag(host_csproj_path,'eventbus')
 # end csproj helpers
 # start C# helpers
 def HandleCSharpLogging(logging_service, sharp_file_path):
@@ -236,78 +216,40 @@ def HandleCSharpLogging(logging_service, sharp_file_path):
         else:
             logging_type = 'microsoft'
     if(logging_enabled):
-        with open(os.path.join(sharp_file_path), 'r+') as f:
-            filtered = list(filter_sub_region(f,'logging',logging_type))
-            f.seek(0)
-            f.writelines(filtered)
-            f.truncate()
-    else:
-        logging_type_start_line = 'region (logging)'
-        logging_type_end_line = 'end (logging)'
-        with open(os.path.join(sharp_file_path), 'r+') as f:
-                filtered = list(filter_region(f, logging_type_start_line, logging_type_end_line))
-                f.seek(0)
-                f.writelines(filtered)
-                f.truncate()
+        filter_sub_region(sharp_file_path,'logging',logging_type)
+    else:        
+        filter_region_with_tag(sharp_file_path,'logging')
 def HandleCSharpDatabase(service_options, sharp_file_path):
     database_enabled = 'database' in service_options
     
     if(database_enabled):
         database_instance = FindDatabaseWithName(service_options['database']['provider'])
         database_type = database_instance['type']
-        with open(os.path.join(sharp_file_path), 'r+') as f:
-            filtered = list(filter_sub_region(f, 'database',database_type))
-            f.seek(0)
-            f.writelines(filtered)
-            f.truncate()
+        filter_sub_region(sharp_file_path,'database',database_type)
     else:
-        with open(os.path.join(sharp_file_path), 'r+') as f:
-                filtered = list(filter_region(f, 'region (database)', 'end (database)'))
-                f.seek(0)
-                f.writelines(filtered)
-                f.truncate()
+        filter_region_with_tag(sharp_file_path,'database')
 def HandleCSharpCache(service_options, sharp_file_path):
     cache_enabled = 'cache' in service_options
     
     if(cache_enabled):
         cache_type = service_options['cache']['type']
-        with open(os.path.join(sharp_file_path), 'r+') as f:
-            filtered = list(filter_sub_region(f, 'cache',cache_type))
-            f.seek(0)
-            f.writelines(filtered)
-            f.truncate()
-    else:
-        with open(os.path.join(sharp_file_path), 'r+') as f:
-                filtered = list(filter_region(f, 'region (cache)', 'end (cache)'))
-                f.seek(0)
-                f.writelines(filtered)
-                f.truncate()
+        filter_sub_region(sharp_file_path,'cache',cache_type)
+    else:        
+        filter_region_with_tag(sharp_file_path,'cache')
 def HandleCSharpServer(service_options,sharp_file_path):
     server_enabled = 'server' in service_options
     if(server_enabled):
         server_instance = FindServerWithName(service_options['server']['provider'])
         server_type = server_instance['type']
-        with open(os.path.join(sharp_file_path), 'r+') as f:
-            filtered = list(filter_sub_region(f, 'server',server_type))
-            f.seek(0)
-            f.writelines(filtered)
-            f.truncate()
+        filter_sub_region(sharp_file_path,'server',server_type)
     else:
-        with open(os.path.join(sharp_file_path), 'r+') as f:
-                filtered = list(filter_region(f, 'region (server)', 'end (server)'))
-                f.seek(0)
-                f.writelines(filtered)
-                f.truncate()
+        filter_region_with_tag(sharp_file_path,'server')
 def HandleCSharpSwagger(dotnet_service, sharp_file_path):
     is_swagger_in_config = 'swagger' in dotnet_service
     if(is_swagger_in_config):
         swagger_enabled = dotnet_service['swagger']
         if not swagger_enabled:
-            with open(os.path.join(sharp_file_path), 'r+') as f:
-                    filtered = list(filter_region(f, 'region (swagger)', 'end (swagger)'))
-                    f.seek(0)
-                    f.writelines(filtered)
-                    f.truncate()
+            filter_region_with_tag(sharp_file_path,'swagger')
 def HandleCSharpEventbus(service_options, sharp_file_path):
     eventbus_enabled = 'eventbus' in service_options
     
@@ -327,20 +269,10 @@ def HandleCSharpEventbus(service_options, sharp_file_path):
                     eb_replace_dict['{{rabbitmq:user:password}}'] = eventbus_instance['docker_compose_override']['environment']['RABBITMQ_DEFAULT_PASSWORD']
         replace_template_file(sharp_file_path,eb_replace_dict)
         eventbus_type = eventbus_instance['type']
-        with open(os.path.join(sharp_file_path), 'r+') as f:
-            filtered = list(filter_sub_region(f, 'eventbus',eventbus_type))
-            f.seek(0)
-            f.writelines(filtered)
-            f.truncate()
+        filter_sub_region(sharp_file_path,'eventbus',eventbus_type)
     else:
-        with open(os.path.join(sharp_file_path), 'r+') as f:
-                filtered = list(filter_region(f, 'region (eventbus)', 'end (eventbus)'))
-                f.seek(0)
-                f.writelines(filtered)
-                f.truncate()
+        filter_region_with_tag(sharp_file_path,'eventbus')
 # end C# helpers
-
-
 def CreateProjectDirectory(projectName, outputDir):
     print ("Scaffolding Project", projectName)
     directory = None
@@ -1214,11 +1146,7 @@ def HandleDotnetApiDbContext(dotnet_service, api_copy_folder):
             os.remove(rm_path)
         docker_file = os.path.join(api_copy_folder,
             'Dockerfile')
-        with open(os.path.join(docker_file), 'r+') as f:
-            filtered = list(filter_region(f, 'region (database)', 'end (database)'))
-            f.seek(0)
-            f.writelines(filtered)
-            f.truncate()
+        filter_region_with_tag(docker_file,'database')
 # Change Namespace To Service Name 
 # extensions: Tuple
 def FindAllFilesWithExtensionInDirectory(folder_path, extensions):
@@ -1236,11 +1164,7 @@ def ReplaceDotnetNameSpaces(file_paths, namespace_name, replace_name):
             replace_template_file(file,replace_dict)
 def ClearRegionLines(file_paths):
     for file in file_paths:        
-        with open(os.path.join(file), 'r+') as f:
-            filtered = list(Clear_File_Region_Marks(f))
-            f.seek(0)
-            f.writelines(filtered)
-            f.truncate()
+        clear_file_region_tags(file)
 # Remove Region Tags
 def HandleDotnetApiNameSpaceAndCleaning(dotnet_service, api_copy_folder):
     src_path = os.path.join(api_copy_folder,'src')
@@ -1490,7 +1414,7 @@ def HandleAngular6SsrClient(client_options):
     copy_folder = os.path.join(srcDir,'Clients',CamelCaseName)
     if os.path.isdir(copy_folder):
         shutil.rmtree(copy_folder,ignore_errors=True)
-    # TODO: Ignore Node MOdules in prod 
+    # TODO: Ignore Node Modules in prod 
     shutil.copytree(template_folder,copy_folder)
     # shutil.copytree(template_folder,copy_folder,ignore=shutil.ignore_patterns('node_modules*'))
     HandleAngular6SsrAuth(client_options,copy_folder)
@@ -1561,7 +1485,7 @@ while True:
                 with open(docker_compose_path, 'w') as yaml_file:
                     yaml.dump(dockerOptions, yaml_file, default_flow_style=False)
                 DockerComposeFinalization(docker_compose_path)
-                print('!! IN case you generated .NET Core Services')
+                print('!! In case you generated .NET Core Services')
                 print ('Do not forget to set evironment variable ASPNETCORE_DEVELOPMENT To Development')
                               
                 

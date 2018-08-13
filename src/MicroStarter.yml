@@ -1,12 +1,5 @@
 version: 0.1
 name: MicroStarter
-# dotnet_class_libs:
-#   - core:
-#       name: ExampleApp.Core # required
-#       framework: netstandard1.3 # default (netstandard2.0)
-#   - events_core:
-#       name: ExampleApp.EventCore
-#       framework: netstandard2.0
 servers: 
    - nginx_instance_v1:
       type: nginx  # required (default)

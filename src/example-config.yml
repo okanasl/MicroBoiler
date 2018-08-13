@@ -62,10 +62,7 @@ databases:
         container_name: mysqlc
         command: mysqld --user=root --verbose
         environment:
-          MYSQL_USER: "doom"
-          MYSQL_PASSWORD: "machine"
           MYSQL_ROOT_HOST: "%"
-          MYSQL_ROOT_PASSWORD: "machine"
           MYSQL_ALLOW_EMPTY_PASSWORD: "false"
    - redis_instance_v1:
       name: my_redis
