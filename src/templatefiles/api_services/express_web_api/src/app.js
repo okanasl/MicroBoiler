@@ -3,20 +3,25 @@ var express = require('express');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 //& region (database)
+//& region (database:postgresql)
+var entityTestRouter = require('./controllers/entitytest')
+//& region (database:postgresql)
+
+//& region (database:mysql)
+var entityTestRouter = require('./controllers/entitytest')
+//& region (database:mysql)
+
 //& region (database:mongodb)
-var mongoose   = require('mongoose');
-//& region (database:mongodb)
-//& region (database)
+var mongoose = require('mongoose');
+var entityRouter = require('./controllers/entity');
+//& end (database:mongodb)
+//& end (database)
+
 var bodyParser = require('body-parser');
-//& region (database)
-//& region (database:mongodb)
-var entityRouter = require('./routes/entity');
-//& region (database:mongodb)
-//& region (database)
 
 //& region (authorization)
-var authtestRouter = require('./routes/authtest');
-//& region (authorization)
+var authtestRouter = require('./controllers/authtest');
+//& end (authorization)
 
 require('dotenv').config()
 var environment = process.env.ENVIRONMENT;
@@ -32,12 +37,15 @@ app.use(cookieParser());
 //& region (database)
 //& region (database:mongodb)
 app.use('/entity', entityRouter);
-//& end (database)
 //& end (database:mongodb)
+//& region (database:mongodb)
+app.use('/entity', entityTestRouter);
+//& end (database:mongodb)
+//& end (database)
 
 //& region (authorization)
 app.use('/authtest', authtestRouter);
-//& region (authorization)
+//& end (authorization)
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
@@ -50,7 +58,7 @@ app.use(bodyParser.json());
 
 var port = process.env.PORT;        // set our port
 
-if (environment == 'Development')
+if (environment == 'development')
 {
   //& region (database)
   //& region (database:mongodb)

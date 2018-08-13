@@ -1,0 +1,26 @@
+{
+  "development": {
+    "username": "doom",
+    "password": "machine",
+    "database": "database_development",
+    "host": "127.0.0.1",
+    "port": 5432,
+    "dialect": "postgres"
+  },
+  "test": {
+    "username": "doom",
+    "password": "machine",
+    "database": "database_test",
+    "host": "127.0.0.1",
+    "port": 5432,
+    "dialect": "postgres"
+  },
+  "production": {
+    "username": "doom",
+    "password": "machine",
+    "database": "database_production",
+    "host": "127.0.0.1",
+    "port": 5432,
+    "dialect": "postgres"
+  }
+}

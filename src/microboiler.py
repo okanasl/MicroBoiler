@@ -1254,7 +1254,7 @@ def HandleNodeJsData(api_service_options,api_copy_folder):
     env_file_path = os.path.join(api_copy_folder,'src','.env')
     models_folder_path =  os.path.join(api_copy_folder,'src','models')
     package_json_file_path =  os.path.join(api_copy_folder,'src','package.json')
-    db_entity_route_file_path =  os.path.join(api_copy_folder,'src','routes','entity.js')
+    db_entity_route_file_path =  os.path.join(api_copy_folder,'src','controllers','entity.js')
     mongo_db_packages = ['mongoose']
     database_enabled = 'database' in api_service_options
     if (database_enabled):        
@@ -1282,7 +1282,7 @@ def HandleNodeJsAuthorization(api_service_options,api_copy_folder):
     env_file_path = os.path.join(api_copy_folder,'src','.env')
     authorize_middleware_file_path = os.path.join(api_copy_folder,'src','middlewares','authorize.js')
     package_json_file_path =  os.path.join(api_copy_folder,'src','package.json')
-    auth_test_route_file_path =  os.path.join(api_copy_folder,'src','routes','authtest.js')
+    auth_test_route_file_path =  os.path.join(api_copy_folder,'src','controllers','authtest.js')
     authorization_enabled = 'authorization' in api_service_options
     if (authorization_enabled):
         identity_instance = FindIdentityServiceWithName(api_service_options['authorization']['issuer'])

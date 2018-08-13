@@ -9,7 +9,7 @@ router.get('/shouldnotauth', function(req, res) {
 // Use Auth Validtion For This Route
 router.use('/shouldauth', auhtorize)
 // You cannot access this route without auth
-router.get('/shouldauth', function(req, res) {
+router.get('/shouldauth', (req, res) => {
   res.json({ message: 'Test Authorized Request Success!' });   
 });
 

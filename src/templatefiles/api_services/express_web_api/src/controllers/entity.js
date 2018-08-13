@@ -4,8 +4,8 @@ var Entity = require('../models/entity');
 
 router.route('/')
     // get all entities
-    .get(function(req,res){
-      Entity.find(function(err, entities) {
+    .get((req,res) =>{
+      Entity.find((err, entities) => {
           if (err)
               res.send(err);
 
@@ -13,7 +13,7 @@ router.route('/')
       });    
     })
     // create a entity (accessed at POST http://localhost:8080/api/entity)
-    .post(function(req, res) {
+    .post((req, res) =>{
 
         var entity = new Entity();      // create a new instance of the Entity model
         entity.name = req.body.name;  // set the entitys name (comes from the request)
@@ -26,10 +26,10 @@ router.route('/')
             res.json({ message: 'Entity created!' });
         });
     });
-  router.route('/entity/:entity_id')
+  router.route('/:entity_id')
 
     // get single entity
-    .get(function(req, res) {
+    .get((req, res) =>{
       Entity.findById(req.params.entity_id, function(err, entity) {
         if (err)
             res.send(err);
@@ -37,7 +37,7 @@ router.route('/')
       });
     })
     // update single entity
-    .put(function(req, res) {
+    .put((req, res) => {
       Entity.findById(req.params.entity_id, function(err, entity) {
 
         if (err)
@@ -52,7 +52,7 @@ router.route('/')
         });
       })
       // delete single entity
-      .delete(function(req, res) {
+      .delete((req, res) => {
         Entity.remove({
             _id: req.params.entity_id
         }, function(err, entity) {
