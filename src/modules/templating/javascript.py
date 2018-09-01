@@ -1,0 +1,2 @@
+class JavaScript:
+    pass

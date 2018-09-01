@@ -1,5 +1,5 @@
 version: 0.1
-name: MicroStarter
+name: RemoteDot
 servers: 
    - nginx_instance_v1:
       type: nginx  # required (default)
@@ -44,7 +44,7 @@ databases:
 eventbus:
    - rabbitmq_instance_v1:
       type: rabbitmq # required
-      name: MicroStarterEventBus # required
+      name: RemoteDotEventBus # required
       docker_compose_set: # defalt docker override options
         image: rabbitmq:3-management-alpine
         container_name: rabbitmqc
@@ -60,9 +60,9 @@ eventbus:
 identity_services:
    - identityserver_v1:
       type: identityserver4
-      name: MicroStarter.Identity
+      name: RemoteDot.Identity
       eventbus: 
-        provider: MicroStarterEventBus
+        provider: RemoteDotEventBus
       ports: [5000]
       server: 
         provider: NginxServer
@@ -71,9 +71,9 @@ identity_services:
       database: # required
         provider: postgre_name # required
 api_services: 
-   - bar_api:
+   - job_api:
       type: dotnet_web_api
-      name: MicroStarter.Api
+      name: RemoteDot.Api
       swagger: true
       database: 
         provider: postgre_name
@@ -84,19 +84,19 @@ api_services:
           redis_server: my_redis
           redis_instance_name: master
       eventbus: 
-        provider: MicroStarterEventBus
+        provider: RemoteDotEventBus
       ports: [8000]
       server: 
         provider: NginxServer 
       logging: serilog
       authorization:
-        issuer: MicroStarter.Identity
+        issuer: RemoteDot.Identity
         secrets: 
-          - "MicroStarter.Identity_bar_secret"
+          - "RemoteDot.Identity_job_secret"
         avaliable_scopes:
-         - "bar_api_read"
-         - "bar_api_write"
-         - "bar_api_fullaccess"
+         - "job_api_read"
+         - "job_api_write"
+         - "job_api_fullaccess"
         user_claims: # claims that is avaliable for user profile
          - "sub"
          - "updated_at"
@@ -123,17 +123,14 @@ api_services:
 clients: 
    - web_1:
       type: angular_cli_6_ssr
-      name: MicroStarter.AngularSsrClient
-      # add_npm_packages:
-      #  - name: '@ngrx/store'
-      #    version: '6.0.1'
+      name: RemoteDot.AngularSsrClient
       authorization: # using angular-oidc-client library
-        issuer: MicroStarter.Identity
+        issuer: RemoteDot.Identity
         scopes: 
          - openid
          - email
          - profile
-         - bar_api_fullaccess
+         - job_api_fullaccess
       ports: [4200]
       server: 
         provider: NginxServer
