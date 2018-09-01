@@ -37,8 +37,8 @@ class Mysql(BaseModule):
             default_mysql_options['environment']['MYSQL_ROOT_PASSWORD'] = db_options['password']
         return default_mysql_options
 
-    @staticmethod
-    def BuildMysqlConnectionString(server_host,database_name,user,password):       
-        conn_string ="Server={0};Database={1};Username={2};Password={3}".format(server_host,database_name,user,password)
-        conn_string_dev = "Server={0};Database={1};Username={2};Password={3}".format('localhost',database_name,user,password)
-        return conn_string, conn_string_dev
+    
+def BuildMysqlConnectionString(server_host,database_name,user,password):       
+    conn_string ="Server={0};Database={1};Username={2};Password={3}".format(server_host,database_name,user,password)
+    conn_string_dev = "Server={0};Database={1};Username={2};Password={3}".format('localhost',database_name,user,password)
+    return conn_string, conn_string_dev

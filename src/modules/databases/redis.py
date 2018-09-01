@@ -52,10 +52,6 @@ class Redis(BaseModule):
         for service_name in redis_using_services:
             redis_docker_options['links'].append(service_name)
         return redis_docker_options
-
-    @staticmethod
-    def BuildRedisConnectionString(redis_options):
-        return redis_options['name'], '127.0.0.1'
     
     def FindRedisUsingServiceNames(self, redis_name):
         services = []
@@ -71,3 +67,6 @@ class Redis(BaseModule):
                         services.append(value['name'])
         
         return services
+
+def BuildRedisConnectionString(redis_options):
+    return redis_options['name'], 'localhost:6379'

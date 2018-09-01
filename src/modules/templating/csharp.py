@@ -1,7 +1,7 @@
 from modules.basemodule import BaseModule
 from modules.templating.templating import filter_region,filter_region_with_tag,filter_sub_region, replace_template_file
 from modules.utils.utils import FindDatabaseWithName, FindEventBusWithName, FindServerWithName
-
+import os
 class Csharp(BaseModule):
     def __init(self,  projectOptions, project_templates_paths, outputPath, client_options):
         super().__init__()
@@ -36,7 +36,7 @@ class Csharp(BaseModule):
             filter_sub_region(host_csproj_path,'eventbus',eventbus_type)
         else:
             filter_region_with_tag(host_csproj_path,'eventbus')
-            
+
     def HandleCSharpLogging(self, service, sharp_file_path):
         logging_enabled = 'logging' in service
         if logging_enabled:
@@ -101,3 +101,11 @@ class Csharp(BaseModule):
             filter_sub_region(sharp_file_path,'eventbus',eventbus_type)
         else:
             filter_region_with_tag(sharp_file_path,'eventbus')
+
+
+    def ReplaceDotnetNameSpaces(self, file_paths, namespace_name, replace_name):
+        replace_dict = {}
+        replace_dict[namespace_name] = replace_name
+        for file in file_paths:
+            if os.path.exists(file):
+                replace_template_file(file,replace_dict)

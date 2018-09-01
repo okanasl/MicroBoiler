@@ -1,6 +1,7 @@
 
 from modules.basemodule import BaseModule
 from modules.devops.docker import Docker
+
 from modules.utils.utils import (InDbQ,
     FindClientWithName,
     FindDatabaseWithName,
@@ -17,6 +18,8 @@ from modules.templating.templating import (replace_template_file,
     ClearRegionLines,
     Clear_File_Region_Marks)
 
+from modules.databases.postgre import BuildPostgreConnectionString
+from modules.databases.mysql import BuildMysqlConnectionString
 
 from modules.templating.csharp import Csharp
 
@@ -283,14 +286,18 @@ class IdentityServer4(BaseModule):
             if 'username' in database_instance:
                 user = database_instance['username']
             if 'password' in database_instance:
-                password = database_instance['password']    
-        user_connection_string, user_connection_string_dev = BuildDatabaseConnectionString(database_type,database_instance['name'],identity_options['name'].lower()+'_users',user,password)        
-        config_connection_string, config_connection_string_dev = BuildDatabaseConnectionString(database_type,database_instance['name'],identity_options['name'].lower()+'_config',user,password)
+                password = database_instance['password'] 
+        if database_type == 'mysql':            
+            user_connection_string, user_connection_string_dev = BuildPostgreConnectionString(database_instance['name'],identity_options['name'].lower()+'_users',user,password)        
+            config_connection_string, config_connection_string_dev = BuildPostgreConnectionString(database_instance['name'],identity_options['name'].lower()+'_config',user,password)
+        elif database_type == 'postgresql':
+            user_connection_string, user_connection_string_dev = BuildPostgreConnectionString(database_instance['name'],identity_options['name'].lower()+'_users',user,password)        
+            config_connection_string, config_connection_string_dev = BuildPostgreConnectionString(database_instance['name'],identity_options['name'].lower()+'_config',user,password)
         conn_strings = {}
-        conn_strings['user_connection_string'] =user_connection_string
-        conn_strings['user_connection_string_dev'] =user_connection_string_dev
-        conn_strings['config_connection_string'] =config_connection_string
-        conn_strings['config_connection_string_dev'] =config_connection_string_dev
+        conn_strings['user_connection_string'] = user_connection_string
+        conn_strings['user_connection_string_dev'] = user_connection_string_dev
+        conn_strings['config_connection_string'] = config_connection_string
+        conn_strings['config_connection_string_dev'] = config_connection_string_dev
         return conn_strings
     def HandleConnectionStringForIs4(self, identity_options ,is4_copy_folder):
         conn_strings =  self.BuildConnStringForIs4(identity_options)
@@ -340,7 +347,7 @@ class IdentityServer4(BaseModule):
         self.csharp_templater.HandleCSharpLogging(identity_service,startup_file_path)
         self.csharp_templater.HandleCSharpServer(identity_service,startup_file_path)
         self.csharp_templater.HandleCSharpLogging(identity_service,program_file_path)
-    def HandleIs4DockerCompose(self, identity_service, is4_copy_folder):
+    def GetIdentityServerDockerOptions(self, identity_service):
         is4_docker_props = {
             'image': identity_service['name'].lower(),
             'build': {
@@ -369,6 +376,11 @@ class IdentityServer4(BaseModule):
         file_clean_paths = FindAllFilesWithExtensionInDirectory(src_path,('.cs','.csproj'))
         ClearRegionLines(file_clean_paths)
     def HandleIdentityServer4(self, identity_service):
+        
+        docker_options = self.GetIdentityServerDockerOptions(identity_service)
+        docker_instance = Docker.getInstance()
+        docker_instance.AddService(identity_service['name'],docker_options)
+
         identityServicesPath = os.path.join(self.project_templates_paths,'identity_services')
         is4_template_folder = os.path.join(identityServicesPath,'identityserver4ef')
         srcDir = os.path.join(self.outputPath,'src')
@@ -389,7 +401,6 @@ class IdentityServer4(BaseModule):
         if 'eventbus' in identity_service:
             self.HandleEventBusForIs4(identity_service, is4_copy_folder)
         self.HandleIs4DockerFile(identity_service, is4_copy_folder)
-        self.HandleIs4DockerCompose(identity_service, is4_copy_folder)
         self.HandleStartupForIs4(identity_service, is4_copy_folder)
         self.HandleIs4Cleaning(is4_copy_folder)
         

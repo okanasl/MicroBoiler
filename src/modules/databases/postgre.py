@@ -35,8 +35,8 @@ class Postgre(BaseModule):
         
         return default_postgre_options
 
-    @staticmethod
-    def BuildPostgreConnectionString(server_host,database_name,user,password):       
-        conn_string ="Server={0};Database={1};Username={2};Password={3}".format(server_host,database_name,user,password)
-        conn_string_dev = "Server={0};Database={1};Username={2};Password={3}".format('localhost',database_name,user,password)
-        return conn_string, conn_string_dev
+    
+def BuildPostgreConnectionString(server_host,database_name,user,password):       
+    conn_string ="Server={0};Database={1};Username={2};Password={3}".format(server_host,database_name,user,password)
+    conn_string_dev = "Server={0};Database={1};Username={2};Password={3}".format('localhost',database_name,user,password)
+    return conn_string, conn_string_dev
