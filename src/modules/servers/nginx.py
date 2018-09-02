@@ -138,7 +138,7 @@ class Nginx(Server):
     def FindApiServicesUsesNginx(self,serverName):
         services = []
         for service in self.projectOptions['api_services']:
-            for key, value in service.items():
+            for _, value in service.items():
                 if 'server' in value:
                     if value['server']['provider'] == serverName:
                         services.append(value)
@@ -146,7 +146,7 @@ class Nginx(Server):
     def FindClientsUsesNginx(self,serverName):
         clients = []
         for client in self.projectOptions['clients']:
-            for key, value in client.items():            
+            for _, value in client.items():            
                 if 'server' in value:
                     if value['server']['provider'] == serverName:
                         clients.append(value)
@@ -154,7 +154,7 @@ class Nginx(Server):
     def FindIdentityServicesUsesNginx(self,serverName):
         i_services = []
         for i_service in self.projectOptions['identity_services']:
-            for key, value in i_service.items():            
+            for _, value in i_service.items():            
                 if 'server' in value:
                     if value['server']['provider'] == serverName:
                         i_services.append(value)

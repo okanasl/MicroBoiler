@@ -41,7 +41,7 @@ class IdentityServer4(BaseModule):
         if len(self.projectOptions['api_services']) < 1:
             return api_services
         for service in self.projectOptions['api_services']:
-            for key, value in service.items():            
+            for _, value in service.items():            
                 if 'authorization' in value:
                     if value['authorization']['issuer'] == i_service_name:
                         api_services.append(value)
@@ -53,7 +53,7 @@ class IdentityServer4(BaseModule):
         if len(self.projectOptions['clients']) < 1:
             return clients
         for client in self.projectOptions['clients']:
-            for key, value in client.items():            
+            for _, value in client.items():            
                 if 'authorization' in value:
                     if value['authorization']['issuer'] == i_service_name:
                         clients.append(value)
@@ -202,7 +202,6 @@ class IdentityServer4(BaseModule):
                 )
             
             if 'secrets' in resource['authorization']:
-                print ('Configuring Secrets')
                 secret_val = ''
                 secrets = resource['authorization']['secrets']
                 secret_count = len(secrets)            
@@ -215,7 +214,6 @@ class IdentityServer4(BaseModule):
                     secret_val += '\n'
                 resource_config_as_cs = resource_config_as_cs.replace('{{resource:secrets}}',secret_val)
             if 'avaliable_scopes' in resource['authorization']:
-                print ('Configuring Avaliable Scopes...')
                 scope_val = ''
                 scope_options = resource['authorization']['avaliable_scopes']
                 scope_count = len(scope_options)
@@ -230,7 +228,6 @@ class IdentityServer4(BaseModule):
             else: 
                 resource_config_as_cs = resource_config_as_cs.replace('{{resource:scopes}}','')
             if 'user_claims' in resource['authorization']:
-                print ('Configuring User Claims...')
                 claims_val = ''
                 claims_options = resource['authorization']['user_claims']
                 claims_count = len(claims_options)

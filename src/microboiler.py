@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 #pylint: disable-msg=W0612
 
 import readline
@@ -180,7 +181,6 @@ with open(configFilePath, 'r') as stream:
         dock.DumpTo(docker_compose_path)
         dock.DockerComposeFinalization(docker_compose_path)
 
-                    
         
     except yaml.YAMLError as exc:
         print('Error parsing yml document')

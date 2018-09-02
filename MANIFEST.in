@@ -1,0 +1,34 @@
+# Manifest syntax https://docs.python.org/2/distutils/sourcedist.html
+graft src/templatefiles
+prune src/templatefiles/clients/ionic/ionic_4_cli/node_modules
+prune src/templatefiles/clients/ionic/ionic_4_cli/platforms
+prune src/templatefiles/clients/ionic/ionic_4_cli/plugins
+prune src/templatefiles/api_services/express_web_api/src/node_modules
+
+prune src/templatefiles/identity_services/identityserver4ef/src/IdentityServer4.EntityFramework/obj
+prune src/templatefiles/identity_services/identityserver4ef/src/IdentityServer4.EntityFramework/bin
+prune src/templatefiles/identity_services/identityserver4ef/src/Host/obj
+prune src/templatefiles/identity_services/identityserver4ef/src/Host/bin
+
+prune src/templatefiles/api_services/dotnet_web_api/src/DotnetWebApi/bin
+prune src/templatefiles/api_services/dotnet_web_api/src/DotnetWebApi/obj
+
+recursive-exclude __pycache__  *.pyc *.pyo *.orig
+recursive-exclude node_modules *
+
+exclude *.git*
+exclude *.yml
+exclude *.coveragerc
+exclude proc*
+exclude pylint*
+exclude README*
+
+include requirements*.*
+exclude requirements-dev.*
+include *.py
+
+
+
+prune .git
+prune venv
+prune test*

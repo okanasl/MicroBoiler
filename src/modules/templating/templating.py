@@ -9,11 +9,16 @@ def replace_template_file(filepath,replace_dict):
     with open(filepath,'w') as cs_file_new:
         cs_file_new.write(cs_content)
 def clear_file_region_tags(file):
-    with open(file) as f:
-        filtered = list(Clear_File_Region_Marks(f))
-        f.seek(0)
-        f.writelines(filtered)
-        f.truncate()
+    try:
+        with open(file,'r+') as f:
+            filtered = list(Clear_File_Region_Marks(f))
+            f.seek(0)
+            f.writelines(filtered)
+            f.truncate()
+    except:
+        print (file)
+        pass
+    
 def filter_region_with_tag(file,tag):
     with open(file, 'r+') as f:
         filtered = list(filter_region(f, 'region ('+tag+')', 'end ('+tag+')'))

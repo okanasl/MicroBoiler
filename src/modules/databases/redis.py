@@ -57,12 +57,12 @@ class Redis(BaseModule):
     def FindRedisUsingServiceNames(self, redis_name):
         services = []
         for service in self.projectOptions['api_services']:
-            for key, value in service.items():
+            for _, value in service.items():
                 if 'cache' in value:
                     if value['cache']['type'] == 'redis':
                         services.append(value['name'])
         for identity_service in self.projectOptions['identity_services']:
-            for key, value in identity_service.items():
+            for _, value in identity_service.items():
                 if  'cache' in value:
                     if value['cache']['type'] == 'redis':
                         services.append(value['name'])
