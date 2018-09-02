@@ -7,6 +7,9 @@
 *.userosscache
 *.sln.docstates
 .pypirc
+dist/
+build/
+microboiler.egg-info/
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 postgres-data/

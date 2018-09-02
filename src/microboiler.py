@@ -7,6 +7,8 @@ import yaml
 import os
 import sys
 
+
+
 from modules.databases.mongodb import MongoDb
 from modules.databases.mysql import Mysql
 from modules.databases.postgre import Postgre
@@ -31,23 +33,12 @@ parser.add_argument('--force','-f',type=bool)
 
 args = vars(parser.parse_args())
 configFilePath = os.path.join(os.getcwd(),args['config'])
-print (args['output'])
-
 projectOptions = {}
 
 scriptPath = os.path.dirname(os.path.realpath(sys.argv[0]))
 templatesPath = os.path.normpath(os.path.join(scriptPath,'templatefiles'))
 
-# project_templates_paths = {    
-# 
-#     'serversPath' : os.path.join(templatesPath,'servers'),
-#     'apiServicesPath' : os.path.join(templatesPath,'api_services'),
-#     'clientsPath' : os.path.join(templatesPath,'clients'),
-#     'databasesPath' : os.path.join(templatesPath,'databases'),
-#     'eventbusPath' : os.path.join(templatesPath,'eventbus'),
-#     'identityServicesPath' : os.path.join(templatesPath,'identity_services')
-# 
-# }
+
 
 
 def CreateProjectDirectory(projectName):

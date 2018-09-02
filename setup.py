@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name="microboiler",
-    version="0.0.1",
+    version="0.0.2",
     author="Okan Aslankan",
     author_email="okn.aslnkn@gmail.com",
     description="A Python tool for generating various types of microservice architecture projects.",
@@ -10,6 +10,7 @@ setuptools.setup(
     install_requires=['pyyaml==3.12','python-nginx==1.4.1'],
     packages=setuptools.find_packages(),
     package_dir={'microboiler': 'src'},
+    scripts=['src/microboiler'],
     include_package_data=True,
     keywords='microservices node .net devops development',
     classifiers=[
