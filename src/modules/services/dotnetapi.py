@@ -31,6 +31,48 @@ class DotnetApi(BaseModule):
         self.csharp_templater = Csharp(projectOptions,project_templates_paths,outputPath)
         super().__init__(projectOptions, project_templates_paths, outputPath)
 
+    def HandleDotnetApiService(self, api_service_options):
+        CamelCaseName = to_camelcase(api_service_options['name'])
+        apiServicesPath = os.path.join(self.project_templates_paths,'api_services')
+        api_template_folder = os.path.join(apiServicesPath,'dotnet_web_api','src')
+        srcDir = os.path.join(self.outputPath,'src')
+        api_copy_folder = os.path.join(srcDir,'ApiServices',CamelCaseName )
+        if os.path.isdir(api_copy_folder):
+            shutil.rmtree(api_copy_folder,ignore_errors=True)
+        # TODO: Swap shutil operations
+        #shutil.copytree(api_template_folder,api_copy_folder,ignore=shutil.ignore_patterns('bin*','obj*'))
+        shutil.copytree(api_template_folder,api_copy_folder)
+        api_src_folder = os.path.join(srcDir,'ApiServices',CamelCaseName,'DotnetWebApi')
+        api_src_rename_folder = os.path.join(srcDir,'ApiServices',CamelCaseName,'src')
+        api_csproj_folder = os.path.join(srcDir,'ApiServices',CamelCaseName,'src','DotnetWebApi.csproj')
+        api_csproj_rename_folder = os.path.join(srcDir,'ApiServices',CamelCaseName,'src',CamelCaseName+'.csproj')
+        
+        if not os.path.isdir(api_src_rename_folder):
+            shutil.copytree(api_src_folder,api_src_rename_folder)
+            shutil.rmtree( api_src_folder,ignore_errors=True)
+        else: 
+            shutil.rmtree( api_src_rename_folder,ignore_errors=True)
+            shutil.copytree(api_src_folder,api_src_rename_folder)
+
+        if not os.path.exists(api_csproj_rename_folder):
+            shutil.copy(api_csproj_folder,api_csproj_rename_folder)
+            os.remove( api_csproj_folder)
+        else: 
+            os.remove(api_csproj_rename_folder)
+            shutil.copy(api_csproj_folder,api_csproj_rename_folder)
+
+
+        self.HandleDotnetApiCsproj(api_service_options,api_copy_folder)
+        self.HandleDotnetApiStartup(api_service_options,api_copy_folder)
+        self.HandleDotnetApiProgramFile(api_service_options,api_copy_folder)
+        self.HandleDotnetApiDbContext(api_service_options,api_copy_folder)
+        self.HandleDotnetApiNameSpaceAndCleaning(api_service_options,api_copy_folder)
+        self.HandleDotnetApiDockerFile(api_service_options,api_copy_folder)
+
+        docker_config = self.HandleDotnetApiDockerCompose(api_service_options,api_copy_folder)
+        docker_instance = Docker.getInstance()
+        docker_instance.AddService(api_service_options['name'], docker_config)
+
     def HandleDotnetApiCsproj(self, dotnet_service, api_copy_folder):
         print ('Handle DotnetApi Csproj File')
         api_csproj_path = os.path.join(api_copy_folder,
@@ -196,41 +238,4 @@ class DotnetApi(BaseModule):
             docker_props['depends_on'].append(eb_provider)
 
         return docker_props
-    def HandleDotnetApiService(self, api_service_options):
-        CamelCaseName = to_camelcase(api_service_options['name'])
-        apiServicesPath = os.path.join(self.project_templates_paths,'api_services')
-        api_template_folder = os.path.join(apiServicesPath,'dotnet_web_api','src')
-        srcDir = os.path.join(self.outputPath,'src')
-        api_copy_folder = os.path.join(srcDir,'ApiServices',CamelCaseName )
-        if os.path.isdir(api_copy_folder):
-            shutil.rmtree(api_copy_folder,ignore_errors=True)
-        # TODO: Swap shutil operations
-        #shutil.copytree(api_template_folder,api_copy_folder,ignore=shutil.ignore_patterns('bin*','obj*'))
-        shutil.copytree(api_template_folder,api_copy_folder)
-        api_src_folder = os.path.join(srcDir,'ApiServices',CamelCaseName,'DotnetWebApi')
-        api_src_rename_folder = os.path.join(srcDir,'ApiServices',CamelCaseName,'src')
-        api_csproj_folder = os.path.join(srcDir,'ApiServices',CamelCaseName,'src','DotnetWebApi.csproj')
-        api_csproj_rename_folder = os.path.join(srcDir,'ApiServices',CamelCaseName,'src',CamelCaseName+'.csproj')
-        
-        if not os.path.isdir(api_src_rename_folder):
-            shutil.copytree(api_src_folder,api_src_rename_folder)
-            shutil.rmtree( api_src_folder,ignore_errors=True)
-        else: 
-            shutil.rmtree( api_src_rename_folder,ignore_errors=True)
-            shutil.copytree(api_src_folder,api_src_rename_folder)
-
-        if not os.path.exists(api_csproj_rename_folder):
-            shutil.copy(api_csproj_folder,api_csproj_rename_folder)
-            os.remove( api_csproj_folder)
-        else: 
-            os.remove(api_csproj_rename_folder)
-            shutil.copy(api_csproj_folder,api_csproj_rename_folder)
-
-
-        self.HandleDotnetApiCsproj(api_service_options,api_copy_folder)
-        self.HandleDotnetApiStartup(api_service_options,api_copy_folder)
-        self.HandleDotnetApiProgramFile(api_service_options,api_copy_folder)
-        self.HandleDotnetApiDbContext(api_service_options,api_copy_folder)
-        self.HandleDotnetApiNameSpaceAndCleaning(api_service_options,api_copy_folder)
-        self.HandleDotnetApiDockerFile(api_service_options,api_copy_folder)
-        self.HandleDotnetApiDockerCompose(api_service_options,api_copy_folder)
+    

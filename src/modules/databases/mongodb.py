@@ -55,16 +55,16 @@ class MongoDb(BaseModule):
                     if value['database']['provider'] == mongo_name:
                         api_services.append(value['name'])
         return api_services
-    @staticmethod
-    def GetConnectionString(api_options,mongodb_options):
-        """
-        Returns ConnectionString for Mongodb
-        """
-        db_name = api_options['database']['database_name']
-        db_host_dev = 'localhost'
-        db_host = mongodb_options['name']
-        db_username = mongodb_options['username']
-        db_password = mongodb_options['password']
-        conn_string = 'mongodb://{0}:{1}@{2}/{3}'.format(db_username,db_password,db_host,db_name)
-        conn_string_dev=  'mongodb://{0}:{1}@{2}/{3}'.format(db_username,db_password,db_host_dev,db_name)
-        return conn_string, conn_string_dev
+
+def GetConnectionString(api_options,mongodb_options):
+    """
+    Returns ConnectionString for Mongodb
+    """
+    db_name = api_options['database']['database_name']
+    db_host_dev = 'localhost'
+    db_host = mongodb_options['name']
+    db_username = mongodb_options['username']
+    db_password = mongodb_options['password']
+    conn_string = 'mongodb://{0}:{1}@{2}/{3}'.format(db_username,db_password,db_host,db_name)
+    conn_string_dev=  'mongodb://{0}:{1}@{2}/{3}'.format(db_username,db_password,db_host_dev,db_name)
+    return conn_string, conn_string_dev

@@ -7,6 +7,7 @@ class Redis(BaseModule):
         super().__init__(projectOptions, project_templates_paths, outputPath)
 
     def HandleRedisDatabase(self, db_options):
+        print (self.project_templates_paths)
         databasesPath = os.path.join(self.project_templates_paths,'databases')
         redis_template_folder = os.path.join(databasesPath,'redis')
         redis_project_folder = os.path.join(self.outputPath, db_options['name'])

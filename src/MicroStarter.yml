@@ -23,7 +23,7 @@ databases:
    - postgresql_instance_v1:
       type: postgresql
       name: postgre_name
-      ports: [6379]
+      port: 6379
       docker_compose_set: # optional (default values) set yours to override
         image: postgres
         container_name: my_postgre_container
@@ -40,7 +40,7 @@ databases:
       user: 
         username: doom
         password: machine
-      ports: [6379]
+      port: 6379
 eventbus:
    - rabbitmq_instance_v1:
       type: rabbitmq # required
@@ -63,7 +63,7 @@ identity_services:
       name: MicroStarter.Identity
       eventbus: 
         provider: MicroStarterEventBus
-      ports: [5000]
+      port: 5000
       server: 
         provider: NginxServer
       logging: serilog
@@ -85,7 +85,7 @@ api_services:
           redis_instance_name: master
       eventbus: 
         provider: MicroStarterEventBus
-      ports: [8000]
+      port: 8000
       server: 
         provider: NginxServer 
       logging: serilog
@@ -134,7 +134,7 @@ clients:
          - email
          - profile
          - bar_api_fullaccess
-      ports: [4200]
+      port: 4200
       server: 
         provider: NginxServer
 

@@ -6,11 +6,13 @@ import nginx
 
 
 class Nginx(Server):
-    def __init__(self, projectOptions, project_templates_paths, outputPath, server_options):
-        super().__init__(projectOptions,project_templates_paths,server_options)
+    def __init__(self, projectOptions, project_templates_paths, outputPath , server_options):
+        self.server_options = server_options
+        super().__init__(projectOptions,project_templates_paths,outputPath, server_options)
 
     def GenerateNginxInstance(self):
-        nginxTemplateFolder = os.path.join(self.project_templates_paths['serversPath'],'nginx')
+        serversPath = os.path.join(self.project_templates_paths,'servers')
+        nginxTemplateFolder = os.path.join(serversPath,'nginx')
         folderPath = os.path.normpath(os.path.join(self.outputPath, self.server_options['name']))
         nginxPath = os.path.join(folderPath,'nginx.conf')
         if os.path.isdir(folderPath):

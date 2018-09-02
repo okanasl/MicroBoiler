@@ -1,4 +1,5 @@
 from modules.basemodule import BaseModule
+from modules.templating.templating import replace_template_file
 import os
 import yaml
 class Docker(BaseModule):
@@ -28,4 +29,9 @@ class Docker(BaseModule):
     def DumpTo(self, file):
         with open(file, 'w') as yaml_file:
             yaml.dump(self.dockerOptions, yaml_file, default_flow_style=False)
+    def DockerComposeFinalization(self, file):
+        replace_dict = {
+            'rabbitmq:healtcheck': '["CMD", "curl", "-f", "http://localhost:15672"]'
+        }
+        replace_template_file(file,replace_dict)
     
