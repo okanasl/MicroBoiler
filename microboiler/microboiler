@@ -6,7 +6,7 @@ import argparse
 import yaml
 import os
 import sys
-import site
+from distutils.sysconfig import get_python_lib
  
 from microboiler.modules.databases.mongodb import MongoDb
 from microboiler.modules.databases.mysql import Mysql
@@ -35,7 +35,7 @@ configFilePath = os.path.join(os.getcwd(),args['config'])
 projectOptions = {}
 
 scriptPath = os.path.dirname(os.path.realpath(sys.argv[0]))
-site_package_path = site.getsitepackages()[0]
+site_package_path = get_python_lib()
 templatesPath = os.path.normpath(os.path.join(site_package_path,'microboiler', 'templatefiles'))
 
 

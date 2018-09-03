@@ -113,7 +113,7 @@ class NodeApi(BaseModule):
             if os.path.isfile(authorize_middleware_file_path):
                 os.remove(authorize_middleware_file_path)
     def HandleNodeJsDockerOptions(self,api_service_options,api_copy_folder):
-        dockerfile_path = os.path.join(api_copy_folder,'Dockerfile')
+        dockerfile_path = os.path.join(api_copy_folder,'src','Dockerfile')
         CamelCaseName = to_camelcase(api_service_options['name'])
         replace_dict = {}
         if 'port' in api_service_options:
