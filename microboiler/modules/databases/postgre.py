@@ -1,6 +1,7 @@
 from microboiler.modules.basemodule import BaseModule
 from microboiler.modules.devops.docker import Docker
 import os
+
 class Postgre(BaseModule):
     def __init__(self, projectOptions, project_templates_paths, outputPath):
         super().__init__(projectOptions, project_templates_paths, outputPath)
@@ -28,6 +29,7 @@ class Postgre(BaseModule):
         
         if 'docker_compose_override' in db_options:
             default_postgre_options.update(db_options['docker_compose_override'])  
+        # Set Username And Password for image
         if 'username' in db_options:
             default_postgre_options['environment']['POSTGRES_USER'] = db_options['username']
         if 'password' in db_options:

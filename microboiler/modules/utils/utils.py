@@ -39,9 +39,6 @@ def FindServerWithName(projectOptions,name):
         if list(server.values())[0]['name'] == name:
             return list(server.values())[0] 
 
-
-
-
 def FindAllFilesWithExtensionInDirectory(folder_path, extensions):
     ext_files = []
     for folder_root, dirs, files in os.walk(folder_path):
@@ -49,3 +46,18 @@ def FindAllFilesWithExtensionInDirectory(folder_path, extensions):
             if file.endswith(extensions):
                 ext_files.append(os.path.join(os.path.abspath(folder_root),file))
     return ext_files
+
+def GetDatabaseUsername(db_options):
+    default_username = 'doom'
+    if (db_options['username'] is not None):
+            default_username = db_options['username']
+    return default_username
+
+def GetDatabasePassword(db_options):
+    default_password = 'machine'
+    if (db_options['password'] is not None):
+        default_password = db_options['password']
+    return default_password
+
+def GetDatabaseUsernameAndPassword(db_options):
+    return GetDatabaseUsername(db_options),GetDatabasePassword(db_options)

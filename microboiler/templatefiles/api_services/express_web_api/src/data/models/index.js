@@ -2,7 +2,8 @@ const fs = require('fs');
 const path = require('path');
 const Sequelize = require('sequelize');
 const basename = path.basename(module.filename);
-const env = process.env.NODE_ENV || 'development';
+require('dotenv').config()
+const env = process.env.ENVIRONMENT || 'development';
 const config = require(`${__dirname}/../config/config.json`)[env];
 const db = {};
 
@@ -14,7 +15,7 @@ if (config.use_env_variable) {
     config.database, config.username, config.password, config
   );
 }
-
+// import all models
 fs.readdirSync(__dirname)
   .filter(file =>
     (file.indexOf('.') !== 0) &&

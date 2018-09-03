@@ -1,4 +1,4 @@
-const Entity = require('../postgre/models/entity').Entity;
+const Entity = require('../data/models/entity').Entity;
 var router = express.Router();
 
 router.route('/')

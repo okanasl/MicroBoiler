@@ -5,7 +5,7 @@ servers:
       type: nginx  # required (default)
       name : myNginxServer # required
       ports: [80,443] # Default HTTP and HTTPS ports
-      config: # example (default) config 
+      config: # example (default) root config 
         worker_processes: '1'
         events:
           worker_connections: '1024'
@@ -24,12 +24,12 @@ databases:
       type: postgresql
       name: postgre_name
       ports: [6379]
+      username: doom
+      password: machine
       docker_compose_override: # optional (default values) set yours to override
         image: postgres
         container_name: my_postgre_container
         environment:
-          POSTGRES_PASSWORD: machine
-          POSTGRES_USER: doom
           POSTGRES_DB: dev
    - mongodb_instance:
       type: mongodb

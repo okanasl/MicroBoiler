@@ -30,6 +30,7 @@ class Mysql(BaseModule):
         }
         if 'docker_compose_override' in db_options:
             default_mysql_options.update(db_options['docker_compose_override'])    
+        # Set username and password
         if 'username' in db_options:
             default_mysql_options['environment']['MYSQL_USER'] = db_options['username']
         if 'password' in db_options:

@@ -1,15 +1,20 @@
 var createError = require('http-errors');
 var express = require('express');
 var cookieParser = require('cookie-parser');
+//& region (logging)
+//& region (logging:morgan)
 var logger = require('morgan');
+//& end (logging:morgan)
+//& end (logging)
+
 //& region (database)
 //& region (database:postgresql)
 var entityTestRouter = require('./controllers/entitytest')
-//& region (database:postgresql)
+//& end (database:postgresql)
 
 //& region (database:mysql)
 var entityTestRouter = require('./controllers/entitytest')
-//& region (database:mysql)
+//& end (database:mysql)
 
 //& region (database:mongodb)
 var mongoose = require('mongoose');
@@ -84,13 +89,14 @@ mongoose.connection.once('open', function callback () {
 });
 //& end (database:mongodb)
 //& end (database)
+
 // error handler
 app.use(function(err, req, res, next) {
   // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};
 
-  // render the error page
+  // the error response
   res.status(err.status || 500);
   
   res.json({ message: 'Error!',err:err.message, status:err.status });
@@ -98,5 +104,5 @@ app.use(function(err, req, res, next) {
 
 app.listen(port);
 console.log('App Listening On Port:' + port);
-console.log('App Environment=> '+environment);
+console.log('App Environment => '+environment);
 module.exports = app;

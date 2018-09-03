@@ -7,7 +7,8 @@ from microboiler.modules.utils.utils import (InDbQ,to_camelcase,
     FindEventBusWithName,
     FindIdentityServiceWithName,
     FindServerWithName,
-    FindAllFilesWithExtensionInDirectory)
+    FindAllFilesWithExtensionInDirectory,
+    GetDatabaseUsernameAndPassword)
 
 from microboiler.modules.templating.templating import (replace_template_file,
     filter_region,
@@ -34,6 +35,15 @@ class NodeApi(BaseModule):
 
     
     def HandleNodeWebApi(self, api_service_options):
+        """
+        ⚝ Handling Nodejs Express Web Api
+        ① Get CamelCase name for renaming output project folder
+        ② Copy from template to output dir
+        ③ Handle Data, Authorization
+        ④ Add to docker-compose and configure Dockerfile
+        ⑤ Clear folders for region tags
+        """
+        #1
         CamelCaseName = to_camelcase(api_service_options['name'])        
         apiServicesPath = os.path.join(self.project_templates_paths,'api_services')
         api_template_folder = os.path.join(apiServicesPath,'express_web_api')
@@ -44,15 +54,54 @@ class NodeApi(BaseModule):
         # TODO: Swap shutil operations
         #shutil.copytree(api_template_folder,api_copy_folder,ignore=shutil.ignore_patterns('node_modules*'))
         shutil.copytree(api_template_folder,api_copy_folder)
-        
+        #3
         self.HandleNodeJsData(api_service_options,api_copy_folder)
         self.HandleNodeJsAuthorization(api_service_options,api_copy_folder)
-
+        #4
         docker_config = self.HandleNodeJsDockerOptions(api_service_options,api_copy_folder)
         docker_instance = Docker.getInstance()
         docker_instance.AddService(api_service_options['name'], docker_config)
+        #5
+        app_js_file_path = os.path.join(api_copy_folder,'src','app.js')
+        ClearRegionLines([app_js_file_path])
 
     def HandleNodeJsData(self, api_service_options,api_copy_folder):
+
+        """
+        ⚝ If Database not enabled
+            ① remove all relevant packages from packages.json
+            ② filter app.js between (database) tag
+            ③ remove models created for mongoose
+            ④ remove data folder (sequelize)
+            ⑤
+            ⑥
+            ⑦
+            ⑧
+            ⑨
+            ⑩
+        ⚝ If Database is enabled
+            ⚝ If Database is mongodb
+                ① remove all other database packages(sequelize) from packages.json
+                ② filter app.js between (database) tag which is not subtagged mongodb
+                ③ set connection strings in app.js
+                ④ remove data folder of sequelize
+                ⑤ remove controllers of sequelize data entpoints⑦
+                ⑧
+                ⑨
+                ⑩
+            ⚝ If Database is postgre or mysql or sqlite
+                ① remove all other database packages(mongoose) from packages.json
+                ② filter app.js between (database) tag which is not subtagged postgre,sqlite,mysql
+                ③ set connection strings in .env file
+                ④ remove relevant file/folders for mongodb
+                ⑤ remove controllers of mongodb data entpoints
+                ⑥ remove .sequelizerc file
+                ⑦
+                ⑧
+                ⑨
+                ⑩
+        """
+
         app_js_file_path = os.path.join(api_copy_folder,'src','app.js')
         env_file_path = os.path.join(api_copy_folder,'src','.env')
         models_folder_path =  os.path.join(api_copy_folder,'src','models')
@@ -60,7 +109,7 @@ class NodeApi(BaseModule):
         db_entity_route_file_path =  os.path.join(api_copy_folder,'src','controllers','entity.js')
         postgre_entity_folder = os.path.join(api_copy_folder,'src','postgre')
         mongo_db_packages = ['mongoose']
-        postgre_db_packages = ['sequelize']
+        sequelize_db_packages = ['sequelize']
         database_enabled = 'database' in api_service_options
         if (database_enabled):        
             database_provider = api_service_options['database']['provider']
@@ -77,10 +126,19 @@ class NodeApi(BaseModule):
                 RemovePackagesFromJson(package_json_file_path, mongo_db_packages)
                 if os.path.isfile(db_entity_route_file_path):
                     os.remove(db_entity_route_file_path)
-            if database_instance['type'] == 'postgresql':
-                pass
+            if database_instance['type'] == 'postgresql' or database_instance['type'] == 'mysql':
+                username,password = GetDatabaseUsernameAndPassword(database_instance)
+                env_replace_dict = {
+                    '{{database:host}}': api_service_options['database']['database_name'],
+                    '{{database:user}}': username,
+                    '{{database:password}}': password
+                }
+                replace_template_file(env_file_path,env_replace_dict)
             else:
-                RemovePackagesFromJson(package_json_file_path, postgre_db_packages)
+                RemovePackagesFromJson(package_json_file_path, sequelize_db_packages)
+                sequelizerc_file_path = os.path.join(api_copy_folder,'src','.sequelizerc')
+                if os.path.isfile(sequelizerc_file_path):
+                    os.remove(sequelizerc_file_path)
                 if os.path.isdir(postgre_entity_folder):
                     shutil.rmtree(postgre_entity_folder)
         else:        
@@ -88,7 +146,18 @@ class NodeApi(BaseModule):
             if os.path.isdir(models_folder_path):
                 shutil.rmtree(models_folder_path,ignore_errors=True)    
             RemovePackagesFromJson(package_json_file_path,mongo_db_packages)
+            RemovePackagesFromJson(package_json_file_path,sequelize_db_packages)
     def HandleNodeJsAuthorization(self,api_service_options,api_copy_folder):
+        """
+        ⚝ If authorization not enabled
+            ① filter between //& region (authorization) in files [app.js]
+            ② remove authorize middleware file
+            ③ remove relevant packages from package.json
+            ④ remove auth test controller
+        ⚝ If authorization enabled:
+            ① filter App.js For authorization:{identity_provider}
+            ② replace relevant configuration in authorize middleware file
+        """
         app_js_file_path = os.path.join(api_copy_folder,'src','app.js')
         env_file_path = os.path.join(api_copy_folder,'src','.env')
         authorize_middleware_file_path = os.path.join(api_copy_folder,'src','middlewares','authorize.js')
@@ -120,7 +189,14 @@ class NodeApi(BaseModule):
             # Remove authorize middleware file
             if os.path.isfile(authorize_middleware_file_path):
                 os.remove(authorize_middleware_file_path)
+            if os.path.isfile(auth_test_route_file_path):
+                os.remove(auth_test_route_file_path)
     def HandleNodeJsDockerOptions(self,api_service_options,api_copy_folder):
+        """
+        ⚝ Configuring docker-compose options
+            ① set port and replace in dockerfile
+            ② if docker_compose_override is set, override default config
+        """
         dockerfile_path = os.path.join(api_copy_folder,'src','Dockerfile')
         CamelCaseName = to_camelcase(api_service_options['name'])
         replace_dict = {}

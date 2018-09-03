@@ -24,6 +24,7 @@ class MongoDb(BaseModule):
             'ports':[],
             'restart': 'on-failure',
             'links':[],
+            'environment':{},
             'depends_on':[],
             'networks': ['localnet']
         }
@@ -41,6 +42,15 @@ class MongoDb(BaseModule):
 
         if 'docker_compose_override' in db_options:
             mongo_docker_options.update(db_options['docker_compose_override'])
+
+        # Set username and password
+        if 'username' in db_options:
+            mongo_docker_options['environment']['MONGO_INITDB_ROOT_USERNAME'] = db_options['username']
+        if 'password' in db_options:
+            mongo_docker_options['environment']['MONGO_INITDB_ROOT_PASSWORD'] = db_options['password']
+        mongo_docker_options['environment']['MYSQL_ROOT_PASSWORD'] = 'test'
+
+        
         return mongo_docker_options
 
     def FindMongoUsingServiceNames(self,mongo_name):
@@ -50,7 +60,7 @@ class MongoDb(BaseModule):
         if len(self.projectOptions['api_services'])== 0:
             return api_services
         for service in self.projectOptions['api_services']:
-            for key, value in service.items():            
+            for _, value in service.items():            
                 if 'database' in value:
                     if value['database']['provider'] == mongo_name:
                         api_services.append(value['name'])
@@ -58,7 +68,7 @@ class MongoDb(BaseModule):
 
 def GetConnectionString(api_options,mongodb_options):
     """
-    Returns ConnectionString for Mongodb
+    Returns ConnectionString for Mongodb with mongoose etc.
     """
     db_name = api_options['database']['database_name']
     db_host_dev = 'localhost'
