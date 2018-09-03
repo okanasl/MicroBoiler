@@ -1,5 +1,5 @@
-from modules.servers.server import Server
-from modules.devops.docker import Docker
+from ..servers.server import Server
+from ..devops.docker import Docker
 import shutil
 import os
 import nginx

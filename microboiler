@@ -8,23 +8,23 @@ import os
 import sys
 
 
+ 
+from . import MongoDb
+from . import Mysql
+from . import Postgre
+from . import Redis
 
-from modules.databases.mongodb import MongoDb
-from modules.databases.mysql import Mysql
-from modules.databases.postgre import Postgre
-from modules.databases.redis import Redis
+from . import Angular
 
-from modules.clients.angular import Angular
+from . import RabbitMq
 
-from modules.eventbus.rabbitmq import RabbitMq
+from . import IdentityServer4
 
-from modules.identity.identityserver4 import IdentityServer4
+from . import DotnetApi
+from . import NodeApi
 
-from modules.services.dotnetapi import DotnetApi
-from modules.services.nodeapi import NodeApi
-
-from modules.servers.nginx import Nginx
-from modules.devops.docker import Docker
+from . import Nginx
+from . import Docker
 
 parser = argparse.ArgumentParser(description='Generate and start your new project from moon')
 parser.add_argument('--config','-c', type=str, help='Configuration file', required=True)

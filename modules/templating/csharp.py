@@ -1,6 +1,6 @@
-from modules.basemodule import BaseModule
-from modules.templating.templating import filter_region,filter_region_with_tag,filter_sub_region, replace_template_file
-from modules.utils.utils import FindDatabaseWithName, FindEventBusWithName, FindServerWithName
+from ..basemodule import BaseModule
+from ..templating.templating import filter_region,filter_region_with_tag,filter_sub_region, replace_template_file
+from ..utils.utils import FindDatabaseWithName, FindEventBusWithName, FindServerWithName
 import os
 class Csharp(BaseModule):
     def __init(self,  projectOptions, project_templates_paths, outputPath, client_options):

@@ -1,4 +1,4 @@
-from modules.basemodule import BaseModule
+from ..basemodule import BaseModule
 
 class Client(BaseModule):
     def __init__(self, projectOptions, project_templates_paths, outputPath):

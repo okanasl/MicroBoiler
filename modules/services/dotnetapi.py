@@ -1,7 +1,7 @@
-from modules.basemodule import BaseModule
-from modules.devops.docker import Docker
-from modules.databases.redis import BuildRedisConnectionString
-from modules.utils.utils import (InDbQ,to_camelcase,
+from ..basemodule import BaseModule
+from ..devops.docker import Docker
+from ..databases.redis import BuildRedisConnectionString
+from ..utils.utils import (InDbQ,to_camelcase,
     FindClientWithName,
     FindDatabaseWithName,
     FindEventBusWithName,
@@ -9,7 +9,7 @@ from modules.utils.utils import (InDbQ,to_camelcase,
     FindServerWithName,
     FindAllFilesWithExtensionInDirectory)
 
-from modules.templating.templating import (replace_template_file,
+from ..templating.templating import (replace_template_file,
     filter_region,
     filter_region_with_tag,
     filter_sub_region,
@@ -17,10 +17,10 @@ from modules.templating.templating import (replace_template_file,
     ClearRegionLines,
     Clear_File_Region_Marks)
 
-from modules.databases.postgre import BuildPostgreConnectionString
-from modules.databases.mysql import BuildMysqlConnectionString
+from ..databases.postgre import BuildPostgreConnectionString
+from ..databases.mysql import BuildMysqlConnectionString
 
-from modules.templating.csharp import Csharp
+from ..templating.csharp import Csharp
 
 import os
 import shutil

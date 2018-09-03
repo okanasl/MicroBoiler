@@ -1,5 +1,5 @@
-from modules.basemodule import BaseModule
-from modules.devops.docker import Docker
+from ..basemodule import BaseModule
+from ..devops.docker import Docker
 import os
 class Mysql(BaseModule):
     def __init__(self, projectOptions, project_templates_paths, outputPath):

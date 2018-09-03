@@ -1,6 +1,6 @@
 
-from modules.basemodule import BaseModule
-from modules.devops.docker import Docker
+from ..basemodule import BaseModule
+from ..devops.docker import Docker
 
 from modules.utils.utils import (InDbQ,
     FindClientWithName,

@@ -1,5 +1,5 @@
-from modules.basemodule import BaseModule
-from modules.templating.templating import replace_template_file
+from ..basemodule import BaseModule
+from ..templating.templating import replace_template_file
 import os
 import yaml
 class Docker(BaseModule):

@@ -1,6 +1,6 @@
-from modules.basemodule import BaseModule
+from ..basemodule import BaseModule
 import os
-from modules.devops.docker import Docker
+from ..devops.docker import Docker
 
 class RabbitMq(BaseModule):
     def __init__(self, projectOptions, project_templates_paths, outputPath):
