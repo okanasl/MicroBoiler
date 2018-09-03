@@ -1,7 +1,7 @@
-from ..basemodule import BaseModule
-from ..devops.docker import Docker
-from ..databases.redis import BuildRedisConnectionString
-from ..utils.utils import (InDbQ,to_camelcase,
+from microboiler.modules.basemodule import BaseModule
+from microboiler.modules.devops.docker import Docker
+from microboiler.modules.databases.redis import BuildRedisConnectionString
+from microboiler.modules.utils.utils import (InDbQ,to_camelcase,
     FindClientWithName,
     FindDatabaseWithName,
     FindEventBusWithName,
@@ -9,7 +9,7 @@ from ..utils.utils import (InDbQ,to_camelcase,
     FindServerWithName,
     FindAllFilesWithExtensionInDirectory)
 
-from ..templating.templating import (replace_template_file,
+from microboiler.modules.templating.templating import (replace_template_file,
     filter_region,
     filter_region_with_tag,
     filter_sub_region,
@@ -18,10 +18,10 @@ from ..templating.templating import (replace_template_file,
     RemovePackagesFromJson,
     Clear_File_Region_Marks)
 
-from ..databases.mongodb import GetConnectionString
-from ..databases.mysql import BuildMysqlConnectionString
+from microboiler.modules.databases.mongodb import GetConnectionString
+from microboiler.modules.databases.mysql import BuildMysqlConnectionString
 
-from ..templating.csharp import Csharp
+from microboiler.modules.templating.csharp import Csharp
 
 import os
 import shutil

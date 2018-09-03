@@ -1,5 +1,5 @@
-from ..servers.server import Server
-from ..devops.docker import Docker
+from microboiler.modules.servers.server import Server
+from microboiler.modules.devops.docker import Docker
 import shutil
 import os
 import nginx

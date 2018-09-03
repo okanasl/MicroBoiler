@@ -1,8 +1,8 @@
 
-from ..basemodule import BaseModule
-from ..devops.docker import Docker
+from microboiler.modules.basemodule import BaseModule
+from microboiler.modules.devops.docker import Docker
 
-from modules.utils.utils import (InDbQ,
+from microboiler.modules.utils.utils import (InDbQ,
     FindClientWithName,
     FindDatabaseWithName,
     FindEventBusWithName,
@@ -10,7 +10,7 @@ from modules.utils.utils import (InDbQ,
     FindServerWithName,
     FindAllFilesWithExtensionInDirectory)
 
-from modules.templating.templating import (replace_template_file,
+from microboiler.modules.templating.templating import (replace_template_file,
     filter_region,
     filter_region_with_tag,
     filter_sub_region,
@@ -18,10 +18,10 @@ from modules.templating.templating import (replace_template_file,
     ClearRegionLines,
     Clear_File_Region_Marks)
 
-from modules.databases.postgre import BuildPostgreConnectionString
-from modules.databases.mysql import BuildMysqlConnectionString
+from microboiler.modules.databases.postgre import BuildPostgreConnectionString
+from microboiler.modules.databases.mysql import BuildMysqlConnectionString
 
-from modules.templating.csharp import Csharp
+from microboiler.modules.templating.csharp import Csharp
 
 import os
 import shutil

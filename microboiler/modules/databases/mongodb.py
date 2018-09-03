@@ -1,6 +1,6 @@
 
-from ..basemodule import BaseModule
-from ..devops.docker import Docker
+from microboiler.modules.basemodule import BaseModule
+from microboiler.modules.devops.docker import Docker
 import os
 class MongoDb(BaseModule):
     def __init__(self, projectOptions, project_templates_paths, outputPath):

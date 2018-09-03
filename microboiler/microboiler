@@ -1,30 +1,29 @@
 #!/usr/bin/env python
-#pylint: disable-msg=W0612
+
 
 import readline
 import argparse
 import yaml
 import os
 import sys
-
-
+import site
  
-from . import MongoDb
-from . import Mysql
-from . import Postgre
-from . import Redis
+from microboiler.modules.databases.mongodb import MongoDb
+from microboiler.modules.databases.mysql import Mysql
+from microboiler.modules.databases.postgre import Postgre
+from microboiler.modules.databases.redis import Redis
 
-from . import Angular
+from microboiler.modules.clients.angular import Angular
 
-from . import RabbitMq
+from microboiler.modules.eventbus.rabbitmq import RabbitMq
 
-from . import IdentityServer4
+from microboiler.modules.identity.identityserver4 import IdentityServer4
 
-from . import DotnetApi
-from . import NodeApi
+from microboiler.modules.services.dotnetapi import DotnetApi
+from microboiler.modules.services.nodeapi import NodeApi
 
-from . import Nginx
-from . import Docker
+from microboiler.modules.servers.nginx import Nginx
+from microboiler.modules.devops.docker import Docker
 
 parser = argparse.ArgumentParser(description='Generate and start your new project from moon')
 parser.add_argument('--config','-c', type=str, help='Configuration file', required=True)
@@ -36,7 +35,8 @@ configFilePath = os.path.join(os.getcwd(),args['config'])
 projectOptions = {}
 
 scriptPath = os.path.dirname(os.path.realpath(sys.argv[0]))
-templatesPath = os.path.normpath(os.path.join(scriptPath,'templatefiles'))
+site_package_path = site.getsitepackages()[0]
+templatesPath = os.path.normpath(os.path.join(site_package_path,'microboiler', 'templatefiles'))
 
 
 

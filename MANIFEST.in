@@ -1,18 +1,18 @@
 # Manifest syntax https://docs.python.org/2/distutils/sourcedist.html
 
-graft templatefiles
-prune templatefiles/clients/ionic/ionic_4_cli/node_modules
-prune templatefiles/clients/ionic/ionic_4_cli/platforms
-prune templatefiles/clients/ionic/ionic_4_cli/plugins
-prune templatefiles/api_services/express_web_api/src/node_modules
+graft microboiler/templatefiles
+prune microboiler/templatefiles/clients/ionic/ionic_4_cli/node_modules
+prune microboiler/templatefiles/clients/ionic/ionic_4_cli/platforms
+prune microboiler/templatefiles/clients/ionic/ionic_4_cli/plugins
+prune microboiler/templatefiles/api_services/express_web_api/src/node_modules
 
-prune templatefiles/identity_services/identityserver4ef/src/IdentityServer4.EntityFramework/obj
-prune templatefiles/identity_services/identityserver4ef/src/IdentityServer4.EntityFramework/bin
-prune templatefiles/identity_services/identityserver4ef/src/Host/obj
-prune templatefiles/identity_services/identityserver4ef/src/Host/bin
+prune microboiler/templatefiles/identity_services/identityserver4ef/src/IdentityServer4.EntityFramework/obj
+prune microboiler/templatefiles/identity_services/identityserver4ef/src/IdentityServer4.EntityFramework/bin
+prune microboiler/templatefiles/identity_services/identityserver4ef/src/Host/obj
+prune microboiler/templatefiles/identity_services/identityserver4ef/src/Host/bin
 
-prune templatefiles/api_services/dotnet_web_api/src/DotnetWebApi/bin
-prune templatefiles/api_services/dotnet_web_api/src/DotnetWebApi/obj
+prune microboiler/templatefiles/api_services/dotnet_web_api/src/DotnetWebApi/bin
+prune microboiler/templatefiles/api_services/dotnet_web_api/src/DotnetWebApi/obj
 
 recursive-exclude __pycache__  *.pyc *.pyo *.orig
 recursive-exclude node_modules

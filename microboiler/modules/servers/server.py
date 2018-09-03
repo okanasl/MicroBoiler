@@ -1,4 +1,4 @@
-from ..basemodule import BaseModule
+from microboiler.modules.basemodule import BaseModule
 class Server(BaseModule):
     def __init__(self, projectOptions, project_templates_paths, outputPath, server_options):
         self.server_options = server_options

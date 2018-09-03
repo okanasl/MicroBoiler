@@ -1,6 +1,6 @@
-from ..basemodule import BaseModule
+from microboiler.modules.basemodule import BaseModule
 import os
-from ..devops.docker import Docker
+from microboiler.modules.devops.docker import Docker
 
 class RabbitMq(BaseModule):
     def __init__(self, projectOptions, project_templates_paths, outputPath):

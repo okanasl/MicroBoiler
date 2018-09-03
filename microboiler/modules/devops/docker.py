@@ -1,5 +1,5 @@
-from ..basemodule import BaseModule
-from ..templating.templating import replace_template_file
+from microboiler.modules.basemodule import BaseModule
+from microboiler.modules.templating.templating import replace_template_file
 import os
 import yaml
 class Docker(BaseModule):
