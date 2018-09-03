@@ -1,12 +1,5 @@
 version: 0.1
 name: ExampleApp
-dotnet_class_libs:
-  - core:
-      name: ExampleApp.Core # required
-      framework: netstandard1.3 # default (netstandard2.0)
-  - events_core:
-      name: ExampleApp.EventCore
-      framework: netstandard2.0
 servers: 
    - nginx_instance_v1:
       type: nginx  # required (default)
@@ -34,8 +27,6 @@ databases:
       docker_compose_override: # optional (default values) set yours to override
         image: postgres
         container_name: my_postgre_container
-        #volumes:
-        #   - ./postgres-data:/var/lib/postgresql/data
         environment:
           POSTGRES_PASSWORD: machine
           POSTGRES_USER: doom

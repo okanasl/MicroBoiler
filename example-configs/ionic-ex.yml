@@ -1,14 +1,5 @@
 version: 0.1
-name: IonicStarter
-# dotnet_class_libs:
-#   - core:
-#       name: ExampleApp.Core # required
-#       framework: netstandard1.3 # default (netstandard2.0)
-#   - events_core:
-#       name: ExampleApp.EventCore
-#       framework: netstandard2.0
-
-  
+name: IonicStarter  
 databases:
    - postgresql_instance_v1:
       type: postgresql

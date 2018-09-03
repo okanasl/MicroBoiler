@@ -38,9 +38,12 @@ app.use(cookieParser());
 //& region (database:mongodb)
 app.use('/entity', entityRouter);
 //& end (database:mongodb)
-//& region (database:mongodb)
+//& region (database:postgresql)
 app.use('/entity', entityTestRouter);
-//& end (database:mongodb)
+//& end (database:postgresql)
+//& region (database:mysql)
+app.use('/entity', entityTestRouter);
+//& end (database:mysql)
 //& end (database)
 
 //& region (authorization)

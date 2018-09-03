@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name="microboiler",
-    version="0.1.3",
+    version="0.1.4",
     author="Okan Aslankan",
     author_email="okn.aslnkn@gmail.com",
     description="A Python tool for generating various types of microservice architecture projects.",

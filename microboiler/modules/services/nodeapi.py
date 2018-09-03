@@ -58,7 +58,9 @@ class NodeApi(BaseModule):
         models_folder_path =  os.path.join(api_copy_folder,'src','models')
         package_json_file_path =  os.path.join(api_copy_folder,'src','package.json')
         db_entity_route_file_path =  os.path.join(api_copy_folder,'src','controllers','entity.js')
+        postgre_entity_folder = os.path.join(api_copy_folder,'src','postgre')
         mongo_db_packages = ['mongoose']
+        postgre_db_packages = ['sequelize']
         database_enabled = 'database' in api_service_options
         if (database_enabled):        
             database_provider = api_service_options['database']['provider']
@@ -72,9 +74,15 @@ class NodeApi(BaseModule):
                 replace_template_file(app_js_file_path,replace_dict)
                 filter_sub_region(app_js_file_path,'database',database_instance['type'])
             else:
-                RemovePackagesFromJson(package_json_file_path,mongo_db_packages)
+                RemovePackagesFromJson(package_json_file_path, mongo_db_packages)
                 if os.path.isfile(db_entity_route_file_path):
                     os.remove(db_entity_route_file_path)
+            if database_instance['type'] == 'postgresql':
+                pass
+            else:
+                RemovePackagesFromJson(package_json_file_path, postgre_db_packages)
+                if os.path.isdir(postgre_entity_folder):
+                    shutil.rmtree(postgre_entity_folder)
         else:        
             filter_region_with_tag(app_js_file_path,'database')
             if os.path.isdir(models_folder_path):
