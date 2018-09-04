@@ -1,7 +1,8 @@
 var createError = require('http-errors');
 var express = require('express');
 var cookieParser = require('cookie-parser');
-var ampq = require('amqplib')
+var publish = require('./event/publish')
+var subscribe = require('./event/consumer')
 //& region (logging)
 //& region (logging:morgan)
 var logger = require('morgan');
@@ -65,31 +66,30 @@ app.use(function(req, res, next) {
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-var port = process.env.PORT;        // set our port
-
+var port = process.env.PORT || 11000;        // set our port
+port = 11000;
 if (environment == 'development')
 {
   //& region (database)
   //& region (database:mongodb)
-  mongoose.connect('{{mongoose_connection_dev}}');  
+  mongoose.connect('localhost')
+  .then(()=>{
+    console.log("Connected to mongodb")
+  })
+  .catch(err=> console.error.bind(console, err) );  
   //& end (database:mongodb)
   //& end (database)
 }else{
   //& region (database)
   //& region (database:mongodb)
-  mongoose.connect('{{mongoose_connection}}');  
+  mongoose.connect('{{mongoose_connection}}')
+  .then(()=>{
+    console.log("Connected to mongodb")
+  })
+  .catch(err=> console.error.bind(console, err) );  
   //& end (database:mongodb)
   //& end (database)
 }
-//& region (database)
-//& region (database:mongodb)
-// Check if we could connect mongodb
-mongoose.connection.on('error', console.error.bind(console, `connection error: MongoDb`));
-mongoose.connection.once('open', function callback () {
-  console.log("Connected To MongoDb Instance");
-});
-//& end (database:mongodb)
-//& end (database)
 
 // error handler
 app.use(function(err, req, res, next) {
@@ -104,6 +104,8 @@ app.use(function(err, req, res, next) {
 });
 
 app.listen(port);
+subscribe();
+publish({message:"Nodejs App Connected To Eventbus"},'')
 console.log('App Listening On Port:' + port);
 console.log('App Environment => '+environment);
 module.exports = app;

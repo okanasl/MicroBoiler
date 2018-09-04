@@ -1,8 +1,9 @@
 const Entity = require('../data/models/entity').Entity;
+var express = require('express')
 var router = express.Router();
 
 router.route('/')
-  .create( (req, res) => {
+  .post( (req, res) => {
     return Entity
         .create({
             title: req.body.title,
