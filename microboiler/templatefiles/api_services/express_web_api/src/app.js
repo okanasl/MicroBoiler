@@ -1,6 +1,7 @@
 var createError = require('http-errors');
 var express = require('express');
 var cookieParser = require('cookie-parser');
+var ampq = require('amqplib')
 //& region (logging)
 //& region (logging:morgan)
 var logger = require('morgan');

@@ -114,6 +114,7 @@ class NodeApi(BaseModule):
         if (database_enabled):        
             database_provider = api_service_options['database']['provider']
             database_instance = FindDatabaseWithName(self.projectOptions, database_provider)
+            filter_sub_region(app_js_file_path,'database',database_instance['type'])
             if database_instance['type'] == 'mongodb':
                 connection_string, connection_string_dev = GetConnectionString(api_service_options, database_instance)
                 replace_dict = {
@@ -121,7 +122,6 @@ class NodeApi(BaseModule):
                     '{{mongoose_connection}}': connection_string
                 }
                 replace_template_file(app_js_file_path,replace_dict)
-                filter_sub_region(app_js_file_path,'database',database_instance['type'])
             else:
                 RemovePackagesFromJson(package_json_file_path, mongo_db_packages)
                 if os.path.isfile(db_entity_route_file_path):

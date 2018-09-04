@@ -30,7 +30,7 @@ databases:
         image: postgres
         container_name: my_postgre_container
         environment:
-          - POSTGRES_DB=dev
+          POSTGRES_DB: dev
    - mongodb_instance:
       type: mongodb
       name: MyMongoDb
@@ -41,8 +41,8 @@ databases:
         image: mongo:latest
         container_name: my_mongodb_container
         environment:
-          - MONGO_DATA_DIR=/data/db
-          - MONGO_LOG_DIR=/dev/null
+          MONGO_DATA_DIR: /data/db
+          MONGO_LOG_DIR: /dev/null
    - mysql_instance:
       type: mysql # required
       name: my_mysql_server # required
@@ -75,9 +75,9 @@ eventbus:
           - "15672:15672"
           - "5672:5672"
           - "5671:5671"
-        environment:
-          RABBITMQ_DEFAULT_PASS=machine
-          RABBITMQ_DEFAULT_USER=doom
+        environment: # should be object not array
+          RABBITMQ_DEFAULT_PASS: machine
+          RABBITMQ_DEFAULT_USER: doom
 identity_services:
    - identityserver_v1:
       type: identityserver4

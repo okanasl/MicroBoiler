@@ -78,7 +78,7 @@ def ClearRegionLines(file_paths):
     for file in file_paths:        
         clear_file_region_tags(file)
 def RemovePackagesFromJson(file,packages):
-    with open(file) as f:
+    with open(file,'r+') as f:
         package_info = json.load(f)
         for package in packages:
             package_info['dependencies'].pop(package, None)
