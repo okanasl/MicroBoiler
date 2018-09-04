@@ -23,19 +23,20 @@ class Mysql(BaseModule):
             'volumes': ['mysql-volume:'+docker_volume_dir],
             'networks':['localnet'],            
             'ports': ['3306:3306'],
-            'environment': {
-                'MYSQL_ROOT_HOST': '"%"',
-                'MYSQL_ALLOW_EMPTY_PASSWORD': '"false"'
-            }            
+            'environment': [
+                'MYSQL_ROOT_HOST="%"',
+                'MYSQL_ALLOW_EMPTY_PASSWORD=false'
+            ]          
         }
-        if 'docker_compose_override' in db_options:
-            default_mysql_options.update(db_options['docker_compose_override'])    
+
         # Set username and password
         if 'username' in db_options:
-            default_mysql_options['environment']['MYSQL_USER'] = db_options['username']
+            default_mysql_options['environment'].append('MYSQL_USER='+db_options['username'])
         if 'password' in db_options:
-            default_mysql_options['environment']['MYSQL_PASSWORD'] = db_options['password']
-            default_mysql_options['environment']['MYSQL_ROOT_PASSWORD'] = db_options['password']
+            default_mysql_options['environment'].append('MYSQL_PASSWORD='+db_options['password'])
+            default_mysql_options['environment'].append('MYSQL_ROOT_PASSWORD='+db_options['password'])
+        if 'docker_compose_override' in db_options:
+            default_mysql_options.update(db_options['docker_compose_override'])
         return default_mysql_options
 
     

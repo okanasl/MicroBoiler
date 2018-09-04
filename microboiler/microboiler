@@ -26,9 +26,10 @@ from microboiler.modules.servers.nginx import Nginx
 from microboiler.modules.devops.docker import Docker
 
 parser = argparse.ArgumentParser(description='Generate and start your new project from moon')
-parser.add_argument('--config','-c', type=str, help='Configuration file', required=True)
+parser.add_argument('--config','-c', type=str, help='Configuration file path', required=True)
 parser.add_argument('--output','-o', type=str, help='Output directory', required=False)
 parser.add_argument('--force','-f',type=bool)
+parser.add_argument('--test','-t',type=bool)
 
 args = vars(parser.parse_args())
 configFilePath = os.path.join(os.getcwd(),args['config'])
@@ -36,8 +37,10 @@ projectOptions = {}
 
 scriptPath = os.path.dirname(os.path.realpath(sys.argv[0]))
 site_package_path = get_python_lib()
-templatesPath = os.path.normpath(os.path.join(site_package_path,'microboiler', 'templatefiles'))
-
+if args['test'] is True:
+    templatesPath = os.path.normpath(os.path.join(scriptPath,'templatefiles'))
+else:
+    templatesPath = os.path.normpath(os.path.join(site_package_path,'microboiler', 'templatefiles'))
 
 
 
@@ -47,7 +50,7 @@ def CreateProjectDirectory(projectName):
     if args['output'] is not None :
         project_output_dir = os.path.normpath(os.path.join(os.getcwd(),args['output']))
     else:
-        project_output_dir = os.path.normpath(os.path.join(os.getcwd(),projectName))
+        project_output_dir = os.path.normpath(os.path.join(configFilePath,'../',projectName))
 
     srcDir = os.path.normpath(os.path.join(project_output_dir,"src"))
     docker_volume_dir = os.path.normpath(os.path.join(project_output_dir,"docker_volumes"))

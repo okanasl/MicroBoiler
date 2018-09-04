@@ -24,7 +24,7 @@ class MongoDb(BaseModule):
             'ports':[],
             'restart': 'on-failure',
             'links':[],
-            'environment':{},
+            'environment':[],
             'depends_on':[],
             'networks': ['localnet']
         }
@@ -40,16 +40,16 @@ class MongoDb(BaseModule):
         for service_name in mongo_using_services:
             mongo_docker_options['links'].append(service_name)
 
-        if 'docker_compose_override' in db_options:
-            mongo_docker_options.update(db_options['docker_compose_override'])
 
         # Set username and password
         if 'username' in db_options:
-            mongo_docker_options['environment']['MONGO_INITDB_ROOT_USERNAME'] = db_options['username']
+            mongo_docker_options['environment'].append('MONGO_INITDB_ROOT_USERNAME='+db_options['username'])
         if 'password' in db_options:
-            mongo_docker_options['environment']['MONGO_INITDB_ROOT_PASSWORD'] = db_options['password']
-        mongo_docker_options['environment']['MYSQL_ROOT_PASSWORD'] = 'test'
+            mongo_docker_options['environment'].append('MONGO_INITDB_ROOT_PASSWORD='+db_options['password'])
+        
 
+        if 'docker_compose_override' in db_options:
+            mongo_docker_options.update(db_options['docker_compose_override'])
         
         return mongo_docker_options
 

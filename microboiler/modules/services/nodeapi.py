@@ -43,7 +43,7 @@ class NodeApi(BaseModule):
         ④ Add to docker-compose and configure Dockerfile
         ⑤ Clear folders for region tags
         """
-        #1
+        #1dawda
         CamelCaseName = to_camelcase(api_service_options['name'])        
         apiServicesPath = os.path.join(self.project_templates_paths,'api_services')
         api_template_folder = os.path.join(apiServicesPath,'express_web_api')
@@ -145,8 +145,7 @@ class NodeApi(BaseModule):
             filter_region_with_tag(app_js_file_path,'database')
             if os.path.isdir(models_folder_path):
                 shutil.rmtree(models_folder_path,ignore_errors=True)    
-            RemovePackagesFromJson(package_json_file_path,mongo_db_packages)
-            RemovePackagesFromJson(package_json_file_path,sequelize_db_packages)
+            RemovePackagesFromJson(package_json_file_path,mongo_db_packages+sequelize_db_packages)
     def HandleNodeJsAuthorization(self,api_service_options,api_copy_folder):
         """
         ⚝ If authorization not enabled

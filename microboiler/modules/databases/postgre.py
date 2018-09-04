@@ -22,19 +22,20 @@ class Postgre(BaseModule):
             'volumes': ['postgres-volume:'+docker_volume_dir],
             'networks':['localnet'],
             'ports': ['5432:5432'],
-            'environment': {
-                'POSTGRES_DB': 'dev',
-            }            
+            'environment': [
+                'POSTGRES_DB=dev',
+            ]          
         }
+        # Set username and password
+        if 'username' in db_options:
+            default_postgre_options['environment'].append('POSTGRES_USER='+db_options['username'])
+        if 'password' in db_options:
+            default_postgre_options['environment'].append('POSTGRES_PASSWORD='+db_options['password'])
+        
         
         if 'docker_compose_override' in db_options:
             default_postgre_options.update(db_options['docker_compose_override'])  
-        # Set Username And Password for image
-        if 'username' in db_options:
-            default_postgre_options['environment']['POSTGRES_USER'] = db_options['username']
-        if 'password' in db_options:
-            default_postgre_options['environment']['POSTGRES_PASSWORD'] = db_options['password']
-        
+            
         return default_postgre_options
 
     

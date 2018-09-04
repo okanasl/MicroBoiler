@@ -30,7 +30,7 @@ databases:
         image: postgres
         container_name: my_postgre_container
         environment:
-          POSTGRES_DB: dev
+          - POSTGRES_DB=dev
    - mongodb_instance:
       type: mongodb
       name: MyMongoDb
@@ -76,8 +76,8 @@ eventbus:
           - "5672:5672"
           - "5671:5671"
         environment:
-          RABBITMQ_DEFAULT_PASS: machine
-          RABBITMQ_DEFAULT_USER: doom
+          RABBITMQ_DEFAULT_PASS=machine
+          RABBITMQ_DEFAULT_USER=doom
 identity_services:
    - identityserver_v1:
       type: identityserver4
